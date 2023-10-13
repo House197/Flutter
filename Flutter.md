@@ -1,5 +1,22 @@
-# Dart
-## Classes
+# Table of Contents
+1. [Dart](#Dart)
+    1. [Clases](#Classes)
+        1. [Constructores](#Constructores)    
+        2. [Variables privadas](#PrivateVariables)
+        3. [Getters y Setters](#GettersSetters)
+        4. [Funciones y variables estáticas](#StaticFunctionsVariable)
+        5. [Herencia](#Inheritance)
+        6. [Override](#Override)
+        7. [Implements](#Implements)
+        8. [Clases Abstractas](#AbstractClasses)
+        9. [Mixin y With](#Mixin-With)
+        10. [Object](#Object)
+        11. [Class Modiffiers](#ClassModifiers)
+    2. [Listas](#Listas)
+
+
+# Dart <a id="Dart"></a>
+## Classes <a id="Clases"></a>
 - Se usa la palabra reservada class para definir a una clase.
 - La convención para una función o variables es camelCase, pero para una clase se usa la notación PascalCase.
 - Se definen propiedades usando variables.
@@ -33,7 +50,7 @@ class Cookie {
 }
 ```
 
-### Constructores
+### Constructores <a id="Constructores"></a>
 - Se utiliza para poder personalizar la instancia de la clase.
 - No se requiere mencionar el tipo de dato del valor que retorna.
 - Debe llevar el mismo nombre de la clase.
@@ -147,7 +164,7 @@ class Cookie {
 }
 ```
 
-### Private variables
+### Private variables <a id="PrivateVariables"></a>
 - Son variables que solo son accesibles dentro de la clase.
 - Se definen con _.
 - En Dart, las variables privadas lo son para un archivo, no son privadas solo para una clase.
@@ -184,7 +201,7 @@ class Cookie {
 }
 ```
 
-### Getters y Setters
+### Getters y Setters <a id="GettersSetters"></a>
 - Se utilizan para retornar un valor.
 - Al usar getter, se debe colocar la palabra reservada get.
 - Al usar setter, se coloca la palabra reservada set.
@@ -229,7 +246,7 @@ class Cookie {
 }
 ```
 
-### Static functions and Static variables
+### Static functions and Static variables <a id="StaticFunctionsVariable"></a>
 - Las variables estáticas pueden ser accedidas como método de clase y no de instancia.
 - No hace falta instancias la clase, por lo que el constructor tampoco será llamado.
 - Ayudan a guardar memoria ya que no se deben instanciar las clases.
@@ -253,7 +270,7 @@ class Constants {
 }
 ```
 
-### Herencia
+### Herencia <a id="Inheritance"></a>
 - Se permite heredar de una clase.
 - Se utiliza la palabra reservada extends.
     - Una clase solo puede heredar una vez, no se puede aplicar extends más de una vez sobre una clase.
@@ -298,7 +315,7 @@ void main() {
 }
 ```
 
-#### Override
+#### Override <a id="Override"></a>
 - En caso de que una case posea un mismo método que de la clase que hereda pero se desea modificar, entonces se puede usar @override.
 
 ``` Dart
@@ -347,7 +364,7 @@ class Car extends Vehicle {
 }
 ```
 
-#### Implements
+#### Implements <a id="Implements"></a>
 - Se usa la palabra reservada implements.
 - Permite obtener todas las propiedades que se desean implementar, por lo que no se tiene acceso a super.
 - Implements puede se usado si se desea crear una implementación propia de otra clase o interfaz.
@@ -404,7 +421,7 @@ class Truck implements Vehicle {
 
 - En este código no se puede usar super, ya que el método accelerate (por ejemplo) siempre es abstracto en el supertype.
 
-#### Abstract Classes
+#### Abstract Classes <a id="AbstractClasses"></a>
 - Se usa la palabra reservada abstract.
 - Con Abstract no se requiere definir el bloque de código del método, solo especifica su nombre.
 - Si se usa extends con una clase abstracta dará error, ya que se debe sobrescribir los métodos para definir el bloque de código.
@@ -421,4 +438,68 @@ class Car implements Vehicle {
     }
 }
 ```
-### Object Oriented Programming (OOP)
+### Mixin with <a id="Mixin-With"></a>
+- No establece una relación de padre e hijo.
+
+``` Dart
+void main() {
+    final anim = Animal();
+
+    anim.fn();
+}
+
+mixin Jump {
+    int jumping = 10;
+}
+
+class Animal with Jump {
+    void fn() {
+        print(jumping);
+    }
+}
+
+class Cat extends Animal {
+    // Cat puede accede a Jump, ya que Animal también puede.
+    void fn() {
+        print(jumping);
+    }
+}
+```
+
+### Object <a id="Object"></a>
+- Es clase base para todo en Dart a exepción de null.
+
+``` Dart
+void main() {
+    Object anim = 105;
+}
+```
+
+### Class Modifiers <a id="ClassModifiers"></a>
+sealed
+final
+base
+interface
+mixin
+
+## Listas <a id="Listas"></a>
+- Se usa la palabra reservada List.
+- Las listas almacenan tipos dinámicos.
+
+``` Dart
+void main() {
+    List list = [1,4,6];
+
+    print(list[2]);
+}
+```
+
+- Se puede especificar que una lista solo tendrá un tipo de dato usando <> (generics <T>).
+
+``` Dart
+void main() {
+    List<double> list = [1,4,6];
+
+    print(list[2]);
+}
+```
