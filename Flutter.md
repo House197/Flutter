@@ -503,3 +503,471 @@ void main() {
     print(list[2]);
 }
 ```
+
+### Métodos <a id="Métodos"></a>
+#### add <a id="add"></a>
+- Permite agregar elementos a una lista en la última posición.
+
+``` Dart
+void main() {
+    List<Student> students = [
+        Student('Rivaan'),
+        Student('Naman'),
+        Student('Rakesh')
+    ];
+
+    print(students);
+
+    students.add(Student('New Kid'));
+
+    print(students);
+
+}
+
+class Student {
+    final String name;
+
+    Student(this.name);
+
+    // Se pueden sobrescribir métodos definidos por Dart usando override
+    @override
+    String toString = () => 'Student: $name';
+}
+```
+
+#### insert <a id="insert"></a>
+- Permite agregar elementos a un lista en la posición deseada.
+- El primer argumento es el índice en donde se va a insertar el elemento, el cual se especifica en la segunda posición.
+
+``` Dart
+void main() {
+    List<Student> students = [
+        Student('Rivaan'),
+        Student('Naman'),
+        Student('Rakesh')
+    ];
+
+    print(students);
+
+    students.insert(2, Student('New Kid'));
+
+    print(students);
+
+}
+
+class Student {
+    final String name;
+
+    Student(this.name);
+
+    // Se pueden sobrescribir métodos definidos por Dart usando override
+    @override
+    String toString = () => 'Student: $name';
+}
+```
+
+#### remove <a id="remove"></a>
+- Permite quitar elementos de una lista.
+- Ya que en este ejemplo se están usando instancias de clase para llenar la lista, se guarda en una variable la referencia de la clase a eliminar para poder usarla.
+
+
+``` Dart
+void main() {
+    // Se guarda la referencia de la instancia de la clase en una variable.
+    final rivaanStudent = Student('Rivaan');
+
+    List<Student> students = [
+        rivaanStudent,
+        Student('Naman'),
+        Student('Rakesh')
+    ];
+
+    print(students);
+
+    students.insert(2, rivaanStudent);
+
+    print(students);
+
+}
+
+class Student {
+    final String name;
+
+    Student(this.name);
+
+    // Se pueden sobrescribir métodos definidos por Dart usando override
+    @override
+    String toString = () => 'Student: $name';
+}
+```
+
+#### Filtrado <a id="filtrado"></a>
+##### Usando for in
+
+``` Dart
+void main() {
+
+    List<Student> students = [
+        Student('Rivaan', 12),
+        Student('Naman', 5),
+        Student('Rakesh', 20)
+    ];
+
+    List<Student> filteredStudents = [];
+
+    for(final student in students) {
+        if(student.marks >= 20) {
+            filteredStudents.add(student)
+        }
+    }
+
+}
+
+class Student {
+    final String name;
+    final int marks;
+
+    Student(this.name, this.marks);
+
+    // Se pueden sobrescribir métodos definidos por Dart usando override
+    @override
+    String toString = () => 'Student: $name';
+}
+```
+
+##### Usando where
+
+``` Dart
+void main() {
+
+    List<Student> students = [
+        Student('Rivaan', 12),
+        Student('Naman', 5),
+        Student('Rakesh', 20)
+    ];
+
+    final filteredStudents = student s.where((student) => student.marks >= 20);
+
+    print(filteredStudents.toList());
+}
+
+class Student {
+    final String name;
+    final int marks;
+
+    Student(this.name, this.marks);
+
+    // Se pueden sobrescribir métodos definidos por Dart usando override
+    @override
+    String toString = () => 'Student: $name';
+}
+```
+
+## Map (Objetos o diccionarios) <a id="Map"></a>
+- Si no se especifica el tipo de dato se le asingna dynamic tanto a la llave como el valor.
+- Se usa null operator (?) para poder usar los métodos del tipo de dato del valor de map, ya que existe la posibilidad de que se accede a una key que no existe.
+
+``` Dart
+void main() {
+    Map marks = {
+        'Rivaan': 10,
+        'Naman': 15,
+        'student': 4,
+    };
+
+    print(marks['student']);
+}
+```
+
+- Se puede asignar el tipo de dato de la siguiente manera:
+
+``` Dart
+void main() {
+    Map<String, int> marks = {
+        'Rivaan': 10,
+        'Naman': 15,
+        'student': 4,
+    };
+
+    print(marks['student']?.isEven); // Se usa null operator para poder acceder a los métodos del tipo de dato que se usa.
+}
+```
+
+### Lista de objetos <a id="ListMaps"></a>
+
+``` Dart
+void main() {
+    List<Map<Strubgm int>> marks = [
+        {
+            'Math': 26;
+            'CS': 30;
+            'English': 15;
+        },
+                {
+            'Math': 16;
+            'CS': 10;
+            'English': 20;
+        },
+    ];
+}
+```
+
+### Métodos <a id="Métodos"></a>
+#### addAll <a id="adAll"></a>
+- Es un método que también está disponible para listas.
+- Permite insertar valores, siendo en este caso definiendo un diccionario en el argumento.
+
+``` Dart
+void main() {
+    Map<String, int> marks = {
+        'Rivaan': 10,
+        'Naman': 15,
+        'student': 4,
+    };
+
+    marks.addAll({
+        'student2': 10,
+        'student3': 30
+    })
+
+    print(marks['student']?.isEven); // Se usa null operator para poder acceder a los métodos del tipo de dato que se usa.
+}
+```
+
+#### remove <a id="RemoveMap"></a>
+- Permite eliminar elementos tanto de listas como de maps.
+- Se requiere pasarle la llave.
+
+``` Dart
+void main() {
+    Map<String, int> marks = {
+        'Rivaan': 10,
+        'Naman': 15,
+        'student': 4,
+    };
+
+    marks.remove('Rivaan')
+
+    print(marks['student']?.isEven); // Se usa null operator para poder acceder a los métodos del tipo de dato que se usa.
+}
+```
+
+#### keys y toList <a id="RemoveMap"></a>
+- Keys retorna las llaves del objeto.
+- En conjunto con toList, se convierte en una lista iterable a las llaves retornadas por keys.
+
+``` Dart
+void main() {
+    Map<String, int> marks = {
+        'Rivaan': 10,
+        'Naman': 15,
+        'student': 4,
+    };
+
+    for(int i=0; i<marks.keys.length; i++){
+        print(marks.keys.toList()[i]);
+    }
+
+}
+```
+
+#### forEach <a id="forEachMaps"></a>
+- Permite iterar objetos.
+
+``` Dart
+void main() {
+    Map<String, int> marks = {
+        'Rivaan': 10,
+        'Naman': 15,
+        'student': 4,
+    };
+
+    marks.forEach((key, val) {
+        print('$key: $val');
+    })
+}
+```
+
+#### map <a id="mapFunc"></a>
+- Permite iterar en los elementos de una lista.
+
+``` Dart
+void main() {
+    List<Map<Strubgm int>> marks = [
+        {
+            'Math': 26;
+            'CS': 30;
+            'English': 15;
+        },
+                {
+            'Math': 16;
+            'CS': 10;
+            'English': 20;
+        },
+    ];
+
+    marks.map((e) {
+        e.forEach((key, val) {
+            print('$key: $val'); 
+        })
+    }).toList();
+}
+```
+
+## Enums <a id="Enums"></a>
+- Guardan una lista de posibles opciones a utilizar en el programa.
+- En el siguiente ejemplo se utiliza para limitar la cantidad de opciones que se pueden asignar a los argumentos de una clase al inicializarla.
+
+``` Dart
+void main() {
+    final employee1 = Employee('Rivaan', EmployeeType.swe);
+    final employee2 = Employee('Rivaan', EmployeeType.finance);
+
+}
+
+enum EmployeeType {
+    swe,
+    finance,
+    marketing
+}
+
+class Employee {
+    final String name;
+    final EmployeeType type;
+
+    Employee(this.name, this.type);
+}
+```
+
+### Enhanced Enums <a id="EnhancedEnums"></a>
+- Se introdujeron en la versión 3.0 o 3.0.1.
+- Permite pasar atributos a las opciones definidas por enums.
+
+``` Dart
+void main() {
+    final employee1 = Employee('Rivaan', EmployeeType.swe);
+    final employee2 = Employee('Rivaan', EmployeeType.finance);
+
+}
+
+enum EmployeeType {
+    swe(200000),
+    finance(250000),
+    marketing(150000);
+
+    final int salary;
+    const EmployeeType(this.salary);
+}
+
+class Employee {
+    final String name;
+    final EmployeeType type;
+
+    Employee(this.name, this.type);
+
+    void fn() {
+        switch(type) {
+            case EmployeeType.swe:
+                print(type.salary);
+            case EmployeeType.finance:
+                print(type.salary);
+            case EmployeeType.marketing:
+                print(type.salary);
+        }
+    }
+}
+```
+
+## Exception Handling (try catch) <a id="TryCatch"></a>
+
+``` Dart
+void main() {
+    try{
+        print(10~/3); // da 3.
+        print(10~/0);
+    } catch(e) {
+        print(e);
+    } finally {
+        // Este bloque siempre se va a ejecutar.
+    }
+}
+```
+
+## Futures (Promises) <a id="Promises"></a>
+- Se usa la palabra reservada Future en conjunto con async.
+    - Si se usa Future<void> entonces los eventos asíncronos se disparan y se escucha hasta que terminen.
+    - (Investigar más sobre esto) Si solo se usa void entonces los eventos asíncronos se disparan pero el programa los olvida.
+- Se especifica el tipo de dato que Future retorna con <>.
+- async se puede omitir si se retorna un Future.
+    - Async solo se usa cuando se desea usar la palabra reservada await.
+
+``` Dart
+Future<void> main() async {
+
+    final result = await giveResultAfter2Sec();
+
+
+
+    print('1');
+    print('2');
+    print('3');
+}
+
+Future<String> giveResultAfter2Sec() {
+    return Future(() {
+        return 'Hey';
+    }) 
+}
+```
+
+- Se puede colocar un delay a Future.
+- Si no se desea usar await entonces se puede usar then.
+
+``` Dart
+void main() {
+
+    giveResultAfter2Sec().then((val) {
+        print(val);
+    })
+
+
+
+    print('1');
+    print('2');
+    print('3');
+}
+
+Future<String> giveResultAfter2Sec() {
+    return Future.delayed(Duration(seconds: 2), () {
+        return 'Hey'; 
+    })
+}
+```
+
+## Llamados a API <a id="LlamadosAPI"></a>
+- En dart se tiene el paquete http 0.13.6.
+- Se puede leer más de esto en pubspec.yaml.
+- En Dart Pad se puede usar de la siguiente manera.
+
+``` Dart
+import 'package:http/htpp.dart';
+
+void main() {
+
+    giveResultAfter2Sec().then((val) {
+        print(val);
+    })
+
+
+
+    print('1');
+    print('2');
+    print('3');
+}
+
+Future<String> giveResultAfter2Sec() {
+    return Future.delayed(Duration(seconds: 2), () {
+        return 'Hey'; 
+    })
+}
+```
