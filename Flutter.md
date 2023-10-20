@@ -950,24 +950,61 @@ Future<String> giveResultAfter2Sec() {
 - En Dart Pad se puede usar de la siguiente manera.
 
 ``` Dart
-import 'package:http/htpp.dart';
+import 'package:http/htpp.dart' as http;
+import 'dart:convert'; // Se usa para usar jsonEncode o jsonDecode en la respuesta de la API.
 
-void main() {
+void main() async {
+    var url = Uri.https('jsonplaceholder.typicode.com', 'users')
+    // o var url = Uri.https('jsonplaceholder.typicode.com', 'users/1')
 
-    giveResultAfter2Sec().then((val) {
-        print(val);
-    })
+    try {
+        final response = await http.get(url);
 
+        print(jsonDecode(res.body as Map));
+    } catch(e) {
+        print(e);
+    }
 
-
-    print('1');
-    print('2');
-    print('3');
 }
 
-Future<String> giveResultAfter2Sec() {
-    return Future.delayed(Duration(seconds: 2), () {
-        return 'Hey'; 
-    })
+```
+
+- En el ejemplo anterior, se está obteniendo un arreglo en la respuesta de la API, por lo que se trata al resultado como as Map para indicar que se trata de un arreglo. En caso de que se obtiene un objeto en la respuesta, jsonDecode funcionaría sin usar as.
+
+## Stream <a id="Stream"></a>
+- Permite suscribirse a eventos. Es un generador asíncrono.
+- Para retornar se debe usar la palabra reservada yield.
+    - Esto es en el caso de usar async, pero se puede retornar solo un STREAM si no se coloca async.
+``` Dart
+Stream<int> countDown() {
+    return Stream.periodic(Duration(seconds: 1), (val) {
+        return val;
+    });
 }
 ```
+- Se debe usar async en conjunto con el símbolo *.
+    - El objeto que se retorna posee varias propiedades para leer los valores que se retornan.
+    - Se usa el método listen para tener una stream subscription.
+
+``` Dart
+import 'package:http/htpp.dart' as http;
+import 'dart:convert'; // Se usa para usar jsonEncode o jsonDecode en la respuesta de la API.
+
+void main() async {
+    countDown().listen((val) {
+        print(val);
+    }, onDone: () {
+        print('It is completed ')
+    })
+}
+
+Stream<int> countDown() async* {
+    for(int i = 5; i>0; i--) {
+        yield i;
+        await Future.delayed(Duration(seconds: 1));
+    }
+}
+
+```
+
+### Stream Controller <a id="StreamController"></a>|
