@@ -13,7 +13,31 @@
         10. [Object](#Object)
         11. [Class Modiffiers](#ClassModifiers)
     2. [Listas](#Listas)
-
+        1. [Métodos](#Métodos)
+            1. [Add](#add)
+            2. [Insert](#insert)
+            3. [Remove](#remove)
+            4. [Filter](#filtrado)
+    3. [Map (diccionario)](#Map)
+        1. [Lista de objetos](#ListMaps)
+        2. [Métodos](#Métodos)
+            1. [Add All](#addAll)
+            2. [Remove](#RemoveMap)
+            3. [Keys y ToList](#KeysToList)
+            4. [For Each](#forEachMaps)
+            5. [Map](#mapFunc)
+    4. [Enums](#Enums)
+        1. [Enhanced Enums](#EnhancedEnums)
+    5. [Exception Handling](#TryCatch)
+    6. [Future (Promises)](#Promises)
+    7. [Llamados a API](#LlamadosAPI)
+    8. [Streams](#Stream)
+        1. [Stream Controller](#StreamController)
+    9. [Records](#Records)
+        1. [Pattern Matching (uso para clsaes)](#PatternMatching)
+    10. [Variables](#Variables)
+    
+2. [Flutter](#Flutter)
 
 # Dart <a id="Dart"></a>
 ## Classes <a id="Clases"></a>
@@ -713,7 +737,7 @@ void main() {
 ```
 
 ### Métodos <a id="Métodos"></a>
-#### addAll <a id="adAll"></a>
+#### addAll <a id="addAll"></a>
 - Es un método que también está disponible para listas.
 - Permite insertar valores, siendo en este caso definiendo un diccionario en el argumento.
 
@@ -752,7 +776,7 @@ void main() {
 }
 ```
 
-#### keys y toList <a id="RemoveMap"></a>
+#### keys y toList <a id="KeysToList"></a>
 - Keys retorna las llaves del objeto.
 - En conjunto con toList, se convierte en una lista iterable a las llaves retornadas por keys.
 
@@ -994,7 +1018,7 @@ void main() async {
     countDown().listen((val) {
         print(val);
     }, onDone: () {
-        print('It is completed ')
+        print('It is complete ')
     })
 }
 
@@ -1007,4 +1031,158 @@ Stream<int> countDown() async* {
 
 ```
 
-### Stream Controller <a id="StreamController"></a>|
+### Stream Controller <a id="StreamController"></a>
+- Permite controlar el Stream al pasar un método que pueda añadir valores a un stream, cancelarlo, pausarlo, etc.
+- Se debe importar el paquete dart:async.
+
+``` Dart
+import 'dart:async';
+
+void main() async {
+    countDown();
+}
+
+void countDown() {
+    final controller = StreamController<int>();
+
+    controller.sink.add(1);
+    controller.sink.add(2);
+    controller.sink.add(3);
+    controller.sink.add(4);
+    controller.sink.close();
+
+    controller.stream.listen((val) {
+        print(val);
+    }, onError: (err) {
+        print(err);
+    })
+
+    cosntroller.close();
+}
+
+```
+
+## Records <a id="Records"></a>
+- Son útiles para la destructuracion de elementos.
+- Se puede colocar _ para ignorar valores en la destructuración.
+
+``` Dart
+void main() async {
+    final list = [1,2,3,4,5,6];
+    final [a, b, c, ...] = list;
+    print('$a $b $c')
+}
+```
+
+``` Dart
+void main() async {
+    final list = [1,2,3,4,5,6];
+    final [a, _, c, ...d] = list;
+    print('$a $c $d')
+}
+```
+
+``` Dart
+void main() async {
+    final jsoned = {
+        'id': 2,
+        'title': 'ssfdsfds',
+        'body': 'dfdafdsfdsa fdsfdsaf'
+    }
+
+    if( jsoned case {'userId': int id, 'title': String title}) {
+        print(userId);
+        print(title);
+    } else {
+        print('Incorrect JSON')
+    }
+
+    // También se puede usar switch en lugar de IF
+    switch(jsoned) {
+        case {'userId': int id, 'title': String title}:
+            print(userId);
+        default:
+            print('Error');
+
+    }
+}
+```
+
+### Pattern Matching (uso para clases) <a id="PatternMatching"></a>
+
+``` Dart
+void main() async {
+    final human = Human('Nice Name', 2);
+
+    final Human(:name, :age) = human;
+
+    print(name);
+}
+
+class Human {
+    final String name;
+    final int age;
+    Human(this.name, this.age);
+}
+```
+
+## Variables <a id="Variables Types"></a>
+
+``` Dart
+dynamic v = 123;   // v is of type int.
+v = 456;           // changing value of v from 123 to 456.
+v = 'abc';         // changing type of v from int to String.
+
+var v = 123;       // v is of type int.
+v = 456;           // changing value of v from 123 to 456.
+v = 'abc';         // ERROR: can't change type of v from int to String.
+
+final v = 123;       // v is of type int.
+v = 456;           // ERROR: can't change value of v from 123 to 456.
+v = 'abc';         // ERROR: can't change type of v from int to String.
+```
+
+
+- **dynamic** es el tipo de dato subyacente de todos los objetos de Dart. No se requiere usarlo explícitamente en todos los casos.
+    - Permite cambiar el tipo de dato y el valor de una variable.
+- var es una palabra clave para indicar a dart que no se desea indicar el tipo.
+    - Dart reemplaza la palabra clave con el inicializador type, o lo dejará dinámico por defecto si no hay inicializador.
+    - Se usar var si se espera que una asignación de variable cambie durante su lifetime.
+    - No permite cambiar el tipo de dato pero sí el valor de una variable.
+    
+``` Dart
+var msg = "Hello world.";
+msg = "Hello world again.";
+```
+
+- final se usa cuando la asignación de una variable permanecerá igual durante su lifetime.
+    - Su uso ayuda a atrapar situaciones en donde accidentalmente se cambia la asignación de una variable cuando no se deseaba hacerlo.
+    - No permite cambiar ni el tipo de dato ni el valor de una variable.
+
+``` Dart
+final msg = "Hello world.";
+```
+
+### Final vs const  <a id="FinalConst"></a>
+- Ambos se usan para declarar variables que no puedes ser reasignadas después de su inicialización. Es decir, se usan para declarar variables como inmutables.
+- Final es una constante en runtime, lo que significa que su valor puede ser asignado en runtime en lugar de compile-time, lo cual sucede cuando se usa const.
+- Las variables const deben ser inicializadas con un valor constante en el tiempo de compilación.
+    - Se usa para crear colecciones y objetos como:
+
+``` Dart
+const [1,3,4];
+const Point(3,4); // En lugar de new Point(2,3)
+```
+
+- Aquí, const significa que todo el estado profundo del objeto puede ser determinado completamente en tiempo de compilación y que el objeto será congelado y completamente inmutable. const modifica valores.
+    - No se puede usar para casos en donde el valor se conoce hasta el runtime (ejemplo: new Datetime.now()).
+    - Si el valor se conoce en el tiempo de compilación (ejemplo: const a = 1) entonces se debe usar const en lugar de final.
+
+- Final se usa cuando no se conoce el valor de una variable en el tiempo de compilación y se conocerá hasta el runtime. 
+    - Por ejemplo:
+        - Una respuesta HTTP que no puede cambiar.
+        - Obtener algo de base de datos.
+        - Leer de un archivo local.
+    - Cualquier cosa que no se conozca en el tiempo de compilación debe ser declarada con final.
+
+# Flutter <a id="Flutter"></a>
