@@ -449,10 +449,19 @@ class Truck implements Vehicle {
 - Se usa la palabra reservada abstract.
 - Con Abstract no se requiere definir el bloque de código del método, solo especifica su nombre.
 - Si se usa extends con una clase abstracta dará error, ya que se debe sobrescribir los métodos para definir el bloque de código.
+- Una clase abstracta en Flutter es una clase que no puede ser usada para instanciar objectos.
+    - Sirve para dos propósitos:
+        - Crear interfaces.
+        - Definir parcialmente clases implementadas en Dart.
+    - Se define colocando la palabra reservada abstract al antes del nombre de la clase.
 
 ``` Dart
+abstract class Shape {
+  void draw(); // Abstract methods
+}
+
 abstract class Vehicle { 
-    void accelerate();
+    void accelerate(); // Abstract method
 }
 
 class Car implements Vehicle {
@@ -462,6 +471,25 @@ class Car implements Vehicle {
     }
 }
 ```
+
+- En este ejemplo, accelerate es un método abstracto que no contiene un method body; sin embargo, obliga a concrete classes o clases hijas derivadas de la clase abstracta a proveer de una implementación para este método.
+- Ejemplos de un clase derivada o concrete serían:
+
+``` Dart
+class Triangle extends Shape { // Class Triangle extends Shape
+  void draw() { // own implementation
+    print('Drawing Triangle');
+  }
+}
+
+class Car implements Vehicle {
+    @override
+    void accelerate() {
+        print('accelerating the car');
+    }
+}
+```
+
 ### Mixin with <a id="Mixin-With"></a>
 - No establece una relación de padre e hijo.
 
@@ -839,6 +867,12 @@ void main() {
 ```
 
 ## Enums <a id="Enums"></a>
+- Son un tipo especial de clase que se usa para representar un número fijo de valores constantes.
+
+``` dart
+enum Color { red, green, blue }
+```
+
 - Guardan una lista de posibles opciones a utilizar en el programa.
 - En el siguiente ejemplo se utiliza para limitar la cantidad de opciones que se pueden asignar a los argumentos de una clase al inicializarla.
 
@@ -865,7 +899,46 @@ class Employee {
 
 ### Enhanced Enums <a id="EnhancedEnums"></a>
 - Se introdujeron en la versión 3.0 o 3.0.1.
+- Dart permite también enum declarations para declarar clases con campos, métodos y constructores constantes que es´tan limitados a un número fijo de instancias constantes conocidas.
+- Para declarar un enhanced enum se sigue una sintaxis similar a las clases, pero con requerimientos extra:
+    - Las variables de instancia deben ser final, incluyendo aquellos agregados por mixins.
+    - Todos los constructores generativos deben ser constantes.
+    - Factory constructors solo pueden retornan uno de los instancias enum fijas y conocidas.
+    - No se puede extender ninguna otra clase ya que Enum se extiende automáticamente.
+    - No puede haber overrides para index, hashCode, el operador de igualdad ==.
+    - No se puede declarar un miembro llamado values en un enum, ya que entraría en conflicto con el getter de valores estáticos generado automáticamente.
+    - Todas las instancias del enum deben declararse al principio de la declaración, y debe haber al menos una instancia declarada.
 - Permite pasar atributos a las opciones definidas por enums.
+- Los métodos de isntancia en un enhanced enum puede usar this para hacer ereferncia al valor enum actual.
+
+- Ejemplo 1:
+
+``` Dart
+enum Vehicle implements Comparable<Vehicle> {
+  car(tires: 4, passengers: 5, carbonPerKilometer: 400),
+  bus(tires: 6, passengers: 50, carbonPerKilometer: 800),
+  bicycle(tires: 2, passengers: 1, carbonPerKilometer: 0);
+
+  const Vehicle({
+    required this.tires,
+    required this.passengers,
+    required this.carbonPerKilometer,
+  });
+
+  final int tires;
+  final int passengers;
+  final int carbonPerKilometer;
+
+  int get carbonFootprint => (carbonPerKilometer / passengers).round();
+
+  bool get isTwoWheeled => this == Vehicle.bicycle;
+
+  @override
+  int compareTo(Vehicle other) => carbonFootprint - other.carbonFootprint;
+}
+```
+
+- Ejemplo 2:
 
 ``` Dart
 void main() {
@@ -1186,3 +1259,81 @@ const Point(3,4); // En lugar de new Point(2,3)
     - Cualquier cosa que no se conozca en el tiempo de compilación debe ser declarada con final.
 
 # Flutter <a id="Flutter"></a>
+## Crear aplicación
+Se pueden crear aplicaciones de Flutter tanto en Android Studio como en Visual Studio
+- Para crear una aplicación desde la terminal se debe correr el siguiente comando.
+
+``` Bash
+flutter create <app_name>
+```
+
+- El nombre de la aplicación debe estar compuestas solo de minúsculas y separada por giones bajos en lugar de espacios.
+- Si se usa VSCode entonces se debe instalar la extensión: Flutter.
+- Se pueden importar devices desde Android Studio para usarlos en VSCode. https://www.youtube.com/watch?v=CzRQ9mnmh44, 8:20:00
+    - Al tener esta extensión es posible correr la aplicación con las opciones que se muestran por encima de la función VOID MAIN de flutter.
+    - De igual manera, se puede correr la aplicación escibiendo flutter run en la terminal.
+    - Finalmente, se puede correr la aplicación con la opción 'Run Without Debugging' en las opciones de Run de VSCode.
+
+## Settings de VSCode
+- Se presiona cmd + shift + p para poder acceder tanto a los settings como a preferences al escribir:
+    - >settings o >preferences¨
+
+## Widgets
+- Los Widgets son clases.
+- Existen los siguientes tipos:
+    - StatelessWidget.
+        - Implica que el Widget tiene poco estado que gestionar.
+        - Una vez que se crea el widget se vuelve inmutable (haciendo referencia que el estado y la data son inmutables).
+        - Al extender StatelessWidget se pide que se sobrescriban algunas funciones, lo cual hace referencia a clases abstractas en donde se debe sobrescribir la función y redefinir la implementación.
+        - En la definición de StatelessWidget se tiene un constructor que pide una key, ya que StatelessWidget extiende a la clase Widget, la cual solicita esta key para su constructor.
+    - StatefulWidet.
+    - Inherited Widget.
+
+## Tipos de diseños
+- Existen dos popoulares:
+    - Material Design (creado por Google).
+        - Se usa importando material.dart y retornando MaterialApp en el Widget que se usa como nodo principal de la aplicación.
+        - Material App ya se encarga del formato del texto, por lo que en Text ya no es necesario especificar la dirección.
+        - Material App provee del:
+            - Theming.
+            - Navigation.
+            - Material Design.
+            - Localization.
+        - MaterialApp requiere de la propiedad home, la cual se usa en conjunto con scaffold, el cual a su vez requiere de la propiedad body.
+        - Scaffold provee lo siguiente:
+            - Provee del Layout para una página (Navbar, header, footer, etc.)
+
+
+``` Dart
+import 'package:flutter/material.dart';
+
+void main () {
+  // MyApp lleva parentesis porque es una clase, por lo que se esta creando una instancia
+  // const indica que el constructor es una constante en el compile time, lo cual indica a Flutter que la instancia de Widget creada no debe ser recreada cada vez. Se debe recrear solo una vez.
+  runApp(const MyApp());
+}
+
+// Todos los Widget son clases
+class MyApp extends StatelessWidget {
+
+  // Se crea el constructor de la clase para pasar la Key solicitadas por StatelessWidge, la cual se la pasa a la clase Widget que extiende.
+  const MyApp({super.key}); // Opcionalmente se toman parametros del constructor y se pasan al Widet que se extiende.
+  // super.key es un shorthand de lo siguiente:
+  // const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Se usa el design dado por Google, por lo que se retorna MaterialApp
+    return MaterialApp(
+      // Se requiere de la propiedad home, la cual requiere de Scaffold que necesita la propiedad de body.
+      home: Scaffold(
+        // Body puede verse como un DIV que ocupa toda la pantalla. Se usan elementos como Center para controlar la posicion de los elementos.
+        body: Center(
+          child: const Text('Hello World'),
+          ),
+      ),
+    );
+  }
+}
+```
+- Cupertino Design (creado por Apple).
