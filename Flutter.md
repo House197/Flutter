@@ -42,12 +42,12 @@
 # Dart <a id="Dart"></a>
 ## Classes <a id="Clases"></a>
 - Se usa la palabra reservada class para definir a una clase.
-- La convención para una función o variables es camelCase, pero para una clase se usa la notación PascalCase.
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>La convención para una función o variables es camelCase, pero para una clase se usa la notación PascalCase.</div>
 - Se definen propiedades usando variables.
 - Se crea una instancia de una clase al invocar la clase con ().
-     - El tipo de dato que se define a la variable es el nombre de la clase o usar **final**.
+     - <div style='background-image: radial-gradient( circle farthest-corner at 10% 20%,  rgba(97,186,255,1) 0%, rgba(166,239,253,1) 90.1% ); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>El tipo de dato que se define a la variable es el nombre de la clase o usar <strong>final</strong>.</div>
 - Se pueden acceder a los métodos y atributos de la clase con la notación de punto. 
-- No es necesario usar la palabra reservada new para crear un clase, ya que Dart ya allocate memoria cada que se crea una instancia de clase a diferencia de Java.
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>No es necesario usar la palabra reservada new para crear un clase, ya que Dart ya allocate memoria cada que se crea una instancia de clase a diferencia de Java.</div>
 
 ``` Dart
 void main() {
@@ -80,7 +80,7 @@ class Cookie {
 - Debe llevar el mismo nombre de la clase.
 - Se coloca en el nivel superior de la clase.
 - Debido al Scope de las funciones, los atributos se deben definir antes del constructor.
-- Si no se usa this dentro de los parámetros del constructor entonces éste crearía nuevas variables.
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>Si no se usa this dentro de los parámetros del constructor entonces éste crearía nuevas variables.</div>
 - A diferencia de lenguajes como Python, en este caso basta solo con definir los parámetros del constructor para poder personalizar la instancia de la clase.
     - Por otro lado, es posible no usar this en los parámetros de los argumentos y definir nuevas variables, las cuales deben asignarse a los atributos como se muestra en el segundo código.
 
@@ -146,8 +146,8 @@ class Cookie {
 ```
 
 - Los código anteriores permiten modificar los atributos usando la notación punto, lo cual no es recomendable.
-    - Se puede solucionar colocan final al momento de definir a los atributos, lo cual formaría una clase inmutable una vez que se crea la instancia y se personaliza con el constructor.
-    - Se igual forma se puede usan métodos y setters (esto no se coloca en el siguiente código).
+    - Se puede solucionar colocando final al momento de definir a los atributos, lo cual formaría una clase inmutable una vez que se crea la instancia y se personaliza con el constructor.
+    - De igual forma se pueden usar métodos getters y setters (esto no se coloca en el siguiente código).
 
 ``` Dart
 void main() {
@@ -163,7 +163,6 @@ void main() {
 
     print(cookie.shape);
     print(cookie.size);
-    
 }
 
 class Cookie {
@@ -190,8 +189,8 @@ class Cookie {
 
 ### Private variables <a id="PrivateVariables"></a>
 - Son variables que solo son accesibles dentro de la clase.
-- Se definen con _.
-- En Dart, las variables privadas lo son para un archivo, no son privadas solo para una clase.
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>Se definen con _.</div>
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>En Dart, las variables privadas lo son para un archivo, no son privadas solo para una clase.</div>
     - Entonces, no importa que se defina una variabla privada dentro de la clase, será accesible dentro de todo el archivo.
 
 ``` Dart
@@ -271,11 +270,11 @@ class Cookie {
 ```
 
 ### Static functions and Static variables <a id="StaticFunctionsVariable"></a>
-- Las variables estáticas pueden ser accedidas como método de clase y no de instancia.
-- No hace falta instancias la clase, por lo que el constructor tampoco será llamado.
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>Las variables estáticas pueden ser accedidas como método de clase y no de instancia.<div>
+- No hace falta instanciar la clase, por lo que el constructor tampoco será llamado.
 - Ayudan a guardar memoria ya que no se deben instanciar las clases.
-- Al declarar atributos no es posible seguir este enfoque, ya que los miembros de instancia no pueden ser accedidos desde métodos estáticos. 
-    - Los atributos de clase se inicializan cuando se crea una instancia.
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'> declarar atributos no es posible seguir este enfoque, ya que los miembros de instancia no pueden ser accedidos desde métodos estáticos. 
+    - Los atributos de clase se inicializan cuando se crea una instancia.</div>
 
 ``` Dart
 void main() {
@@ -296,7 +295,7 @@ class Constants {
 
 ### Herencia <a id="Inheritance"></a>
 - Se permite heredar de una clase.
-- Se utiliza la palabra reservada extends.
+- <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>Se utiliza la palabra reservada extends.</div>
     - Una clase solo puede heredar una vez, no se puede aplicar extends más de una vez sobre una clase.
     - En Dart esto se debe a que de las dos clases que se desea heredar hay probabilidad de que puedan compartir algunos atributos, por lo que el compilador no sabe cuál debería tomar de esas opciones.
 
@@ -1337,3 +1336,42 @@ class MyApp extends StatelessWidget {
 }
 ```
 - Cupertino Design (creado por Apple).
+
+## Build
+- Build Context es una clase dada por Flutter.
+- Permite indicar a Flutter la ubicación exacta de un Widget en el árbol de Widgets.
+- Cada que se wxtiende un Widget (stateful o stateless) se va a tener acceso a build.
+
+## Widget Column
+- Widget permite deifnir varios Widget en su propiedad Children por medio de una lista, lo cual permite agregar varios Widgets que se van a acomodar en la pantalla de forma vertical.
+- No se requiere envolver en un Widget Center.
+- Maneja sus propias propiedades para centrar a los elementos en el eje vertical (el principal en este caso), y el horizontal.
+    - MainAxisAlignment.
+    - CrossAxisAlignment.
+- Se recalca que MainAxis Alignment es un enum, ya que define un número fijo de valores constantes (center, start, end, etc).
+
+``` Dart
+import 'package:flutter/material.dart';
+
+class CurrencyConverterMaterialPage extends StatelessWidget {
+
+  const CurrencyConverterMaterialPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,        
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text('Text 1'),
+            Text('Converter Page'),
+            Text('Text 2')
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
