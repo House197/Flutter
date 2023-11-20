@@ -1344,6 +1344,7 @@ class MyApp extends StatelessWidget {
 
 ## Widget Column
 - Widget permite deifnir varios Widget en su propiedad Children por medio de una lista, lo cual permite agregar varios Widgets que se van a acomodar en la pantalla de forma vertical.
+- Va a ocupar toda la pantalla verticalmente, pero horizontalmente solo tomará el contenido más largo.
 - No se requiere envolver en un Widget Center.
 - Maneja sus propias propiedades para centrar a los elementos en el eje vertical (el principal en este caso), y el horizontal.
     - MainAxisAlignment.
@@ -1365,7 +1366,7 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,        
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('Text 1'),
+            Text('Text 1', style: TextStyle()),
             Text('Converter Page'),
             Text('Text 2')
           ],
@@ -1375,3 +1376,35 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
   }
 }
 ```
+
+## Text
+- Widget que permite introducir texto en la aplicación.
+- Se puede dar estilo por medio de la propiedad style y la clase TextStyle, lo cual abarca estilos como 
+    - font-size.
+    - font-weight.
+    - Color.
+        - Se puede usar la clase de Color para poder usar la opciones como RGBO.
+        - Se puede usar la clase Colors para acceder a colores predeterminados por medio de su nombre.
+
+## TextField
+- Permite al usuario poder ingresar valores.
+- Se puede dar estilo al texto del Widget por medio de la propiedad style y la clase TextStyle.
+- Se le da estilo a la estructura por medio de decoration y la clase InputDecoration.
+    - Permite definir la label del input.
+        - En este caso se presentan dos opciones: label y labelText.
+            - Label requiere que se le pase un Widget (Text()) para desplegar la información, lo que permite una mayor pesonalización en el estilo.
+            - LabelText solo requiere de un String.
+    - El Placeholder está dado por la propiedad hintText.
+        - Se le da estilo por medio de hintStyle.
+    - Se puede usar la propiedad prefix/suffix para añadir ya sea texto o un icono a la input.
+        - Los iconos se agregan usando prefixIcon con ayuda de la clase Icon y Icons como argumento de la clase.
+        - Se les da color a los iconos usando prefixIconColor.
+    - Se tienen opciones de estilo como fill, focus hover color.
+        - Para poder usar fillColor se debe establecer la propiedad filled a true.
+    - Se tienen opciones de Border.
+        - Se quita el borde azul que trae por defecto el Input por medio de focusedBorder.
+            - Se debe usar la clase OutlineInputBorder para especificar el color.
+            - Se aprecia que al hacer hover sobre la líena de código de la clase de BorderSide se ve que por defecto la clase ya está asignando el valor del color, el ancho, el estilo y el strokeAlign (permite definir si el borde debe estar dentro del widget, en medio o por fuera).
+    - BorderRadius presenta la opcion de BorderRadius.all, el cual es su constructor.
+
+    10:40
