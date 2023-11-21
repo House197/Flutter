@@ -1407,4 +1407,21 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
             - Se aprecia que al hacer hover sobre la líena de código de la clase de BorderSide se ve que por defecto la clase ya está asignando el valor del color, el ancho, el estilo y el strokeAlign (permite definir si el borde debe estar dentro del widget, en medio o por fuera).
     - BorderRadius presenta la opcion de BorderRadius.all, el cual es su constructor.
 
+# Clonar repositorio de proyecto Flutter
+- Se clona el repositorio usando git glone.
+- Se corre el comando flutter pub get para instalar las dependencias del proyecto, lo cual es similar a npm install.
+- Si se desea hacer push de los cambios al repositorio pero usando otra cuenta, entonces se cambia el origen del remote.
+https://stackoverflow.com/questions/2432764/how-do-i-change-the-uri-url-for-a-remote-git-repository
+
+git remote set-url origin new.git.url/here
+
+En donde el origin debe lucir de la siguiente manera segun se haya establecido en el archivo config en la carepta .shh
+
+git@github.com-work:kaththy/Test.git
+
+# Extras
+## Agregar segunda cuenta de Git
+- Se siguen los pasos de este <a href=''>https://code.tutsplus.com/quick-tip-how-to-work-with-github-and-multiple-accounts--net-22574t</a>
+    - Al momento de crear la SSH Key se corre el siguiente comando agregando el email deseado.
+ssh-keygen -t ed25519 -C "your@email.com"
     10:40
