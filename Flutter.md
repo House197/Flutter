@@ -1406,6 +1406,80 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
             - Se debe usar la clase OutlineInputBorder para especificar el color.
             - Se aprecia que al hacer hover sobre la líena de código de la clase de BorderSide se ve que por defecto la clase ya está asignando el valor del color, el ancho, el estilo y el strokeAlign (permite definir si el borde debe estar dentro del widget, en medio o por fuera).
     - BorderRadius presenta la opcion de BorderRadius.all, el cual es su constructor.
+        - <div style='background:radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%); color:black; font-weight:bold; padding:10px 10px; padding-top:3px; border-radius:10px;'>Con el constructor BorderRadius.Circular no se debe usar const, pero al definir const Scaffold (el cual contiene a TextField), todos los Widgets hijos deben ser const.</div>
+        - Entonces, si se desea usar BorderRadius.Circular se debe quitar el const de Scaffold pero agregar const a todos los widgets hijos (solo para los hijos que son const) a excepcion a los Widgets que son parents.
+        - Si se desea que el borde siempre tenga el estilo y no solo cuando se le haga focus entonces se usa la propiedad enabledBorder y se le coloca el mismo Widget que se uso para focusedBorder.
+        - Se puede controlar los valores que se le pueden ingresar al TextField con el parametro keyboardType y TypeTextInput.
+    
+``` dart
+class CurrencyConverterMaterialPage extends StatelessWidget {
+
+  const CurrencyConverterMaterialPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+
+    // Se pueden guardar Widgets en variables, lo cual ayuda para un factor comun.
+    final border = OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: Colors.black,
+                        width: 2,
+                        style: BorderStyle.solid,
+                        strokeAlign: BorderSide.strokeAlignOutside
+                      ),
+                      borderRadius: BorderRadius.circular(60)
+                    );
+
+    return Scaffold(
+      body: ColoredBox(
+        color: Colors.blueGrey, // Color de Center
+        child: Center(
+          child: ColoredBox(
+            color: Color.fromARGB(111, 32, 104, 199), // Color de Column
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,        
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text('Currency Converter', style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 10
+                )),
+                const Text('Converter Page', style: TextStyle(
+                  color: Colors.lightBlueAccent,
+                  fontWeight: FontWeight.bold
+                )),
+                TextField(
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold
+                  ),
+                  decoration: InputDecoration(
+                    label: const Text('Converter', style: TextStyle(color: Colors.black)),
+                    hintText: 'Enter the amount to be converted.',
+                    prefixText: 'Amount: ',
+                    prefixIcon: const Icon(Icons.monetization_on),
+                    prefixIconColor: Colors.white,
+                    fillColor: Colors.white,
+                    filled: true,
+                    enabledBorder: border,
+                    focusedBorder: border,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Padding y Container
 
 # Clonar repositorio de proyecto Flutter
 - Se clona el repositorio usando git glone.
@@ -1424,4 +1498,4 @@ git@github.com-work:kaththy/Test.git
 - Se siguen los pasos de este <a href=''>https://code.tutsplus.com/quick-tip-how-to-work-with-github-and-multiple-accounts--net-22574t</a>
     - Al momento de crear la SSH Key se corre el siguiente comando agregando el email deseado.
 ssh-keygen -t ed25519 -C "your@email.com"
-    10:40
+    11:07
