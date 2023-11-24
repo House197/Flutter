@@ -1276,6 +1276,7 @@ flutter create <app_name>
 ## Settings de VSCode
 - Se presiona cmd + shift + p para poder acceder tanto a los settings como a preferences al escribir:
     - >settings o >preferences¨
+- La extension Error Lens permite ver las advertencias directamente en la linea de codigo si tener que hacer hover sobre la linea de codigo.
 
 ## Widgets
 - Los Widgets son clases.
@@ -1480,6 +1481,78 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
 ```
 
 ## Padding y Container
+- Padding se encarga unicamente de dar el espaciado entre el contenido y el contenedor, mientras que Container se compone de varios Widgets, incluyendo el de Padding.
+
+## Botones
+- Se pueden pasar funciones anonimas.
+``` Dart
+    TextButton(
+        onPressed: () {
+            print('I was clicked');
+        },
+        child: Text('Press Me')
+    )
+```
+- Los botones requieren de funciones void y que no aceptan parametros.
+- Se clasifican en:
+    - Raised ()
+    - Appears like a text (TextButton, ElevatedButton)
+- Se les da estilo con la propiedad style en conjunto con MaterialStatePropertyAll, en donde se pueden ingresar los valores que se pondrian para los campos de color, textStyle, etc. 
+- En los botones, el color de texto se da con la propiedad de foregroundBackground en el estilo del boton.
+- Un boton puede abarcar todo el ancho usando la propiedad minimumSize, Size y pasando double.infinity en la parte de width.
+
+``` Dart
+ElevatedButton(
+    onPressed: () {
+        print('I was clicked');
+    },
+    style: const ButtonStyle(
+        backgroundColor: MaterialStatePropertyAll(Colors.amber),
+        foregroundColor: MaterialStatePropertyAll(Colors.blueAccent),
+        minimumSize: MaterialStatePropertyAll(Size(double.infinity, 50.0)),
+        shape: MaterialStatePropertyAll(RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10))
+        ))
+    ),
+    child: const Text('Convert',)
+),
+```
+
+- Se puede evitar usar MaterialStatePropertyAll todo el tiempo al usar en style: NombreBotonWidget.styleFrom
+    - Esta opcion es una funcion, por lo que no se le puede poner const. 
+
+``` Dart
+ElevatedButton(
+    onPressed: () {
+        print('I was clicked');
+    },
+    style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.amber,
+        foregroundColor: Colors.blueAccent,
+        minimumSize: const Size(double.infinity, 50.0),
+        shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10))
+        )
+    ),
+    child: const Text('Convert',)
+),
+```
+
+## Ejectuar codigo segun su se esta en debug, release o profile
+- Flutter provee de la variable kDebugMode. 
+``` Dart
+    TextButton(
+        onPressed: () {
+            if(kDebuMode){
+                print('I was clicked');
+            }       
+        },
+        child: Text('Press Me')
+    )
+```
+
+## Buenas practicas
+- La propiedad child en un Widget siempre tiene que estar al final de la lista en las propiedades.
 
 # Clonar repositorio de proyecto Flutter
 - Se clona el repositorio usando git glone.
