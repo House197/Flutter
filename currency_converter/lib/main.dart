@@ -1,10 +1,12 @@
 import 'package:currency_converter/currency_converter.dart';
+import 'package:currency_converter/currency_converter_cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 void main () {
   // MyApp lleva parentesis porque es una clase, por lo que se esta creando una instancia
   // const indica que el constructor es una constante en el compile time, lo cual indica a Flutter que la instancia de Widget creada no debe ser recreada cada vez. Se debe recrear solo una vez.
-  runApp(const MyApp());
+  runApp(const MyCupertinoApp());
 }
 
 // Todos los Widget son clases
@@ -21,6 +23,17 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       // Se requiere de la propiedad home, la cual requiere de Scaffold que necesita la propiedad de body.
       home: CurrencyConverterMaterialPage()
+    );
+  }
+}
+
+class MyCupertinoApp extends StatelessWidget {
+  const MyCupertinoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const CupertinoApp(
+      home: CurrencyConverterCupertinoPage(),
     );
   }
 }
