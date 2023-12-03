@@ -1729,6 +1729,177 @@ class _CurrencyConverterMaterialPageState extends State<CurrencyConverterMateria
     )
 ```
 
+## Ciclo de vida de los Widgets.
+### StatelessWidget
+- AL isntanciar un Widget se invoca primero al constructor y luego a la función build.
+
+### StatefulWidget
+- AL instanciar a un Widget se invoca a la función definida createState, la cual otorga el uso de métodos especiales, tales como:
+- El ciclo de vida es:
+    - constructor.
+    - createState.
+    - initState.
+    - didChangeDependencies
+
+#### initState
+- Corre una vez cuando el constructor y createdState de la aplicación han sido invocados.
+- Permite inicializar variables con un valor ya que corre al inicio de la aplicación.
+    - Por ejemplo, se puede suscribir a streams y hacer conexiones con sockets.
+- super.initState() debe ser la primera línea de codigo a colocar en el bloque.
+    - super hace referencia al objeto padre en el state class (MyWidget).
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  late int abc;
+
+  @override
+  void initState() {
+    super.initState();
+    abc = 10;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+#### didChangeDependencies
+- Se llama después de initState.
+- El método se invoca de igual manera cada que la pieza de data, a la cual el widget depende, se actualiza.
+- Se usa poco frecuente ya que el método build se invoca después.
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  late int abc;
+
+  @override
+  void initState() {
+    super.initState();
+    abc = 10;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+#### didUpdateWidget
+- Corre cada que el widget relacinado al estado se reemplaza por otro widget.
+- Se usa poco frencuente.
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  late int abc;
+
+  @override
+  void initState() {
+    super.initState();
+    abc = 10;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(covariant MyStatefulWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+#### dispose
+- Se usa para quitar las conexiones que tiene la app.
+- Previene memory leaks ya que permite limpiar streams, variables o conexiones de la aplicación.
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  MyWidget({Key? key}) : super(key: key) {
+    print('from constructor');   
+  }
+
+  @override
+  State<MyWidget> createState() {
+    print('from createState');    
+    return _MyWidgetState();
+  }
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  @override
+  void initState() {
+    super.initState();
+    print('from initState');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print('from didChangeDependencies');
+  }
+
+  @override
+  void didUpdateWidget(covariant MyStatefulWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    print('from didUpdateWidget');
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    print('from dispose');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+#### setState
+- Se usa para volver a correr la función build
+ 
 ## Buenas practicas
 - La propiedad child en un Widget siempre tiene que estar al final de la lista en las propiedades.
 
