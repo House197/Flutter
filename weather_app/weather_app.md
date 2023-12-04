@@ -6,6 +6,14 @@ flutter create weater_app
 ``` 
 
 # General
+
+## Instalar dependencias al clonar repositorio.
+Se corre el siguiente comando en la consola de comandos.
+
+``` bash
+flutter pub get
+```
+
 ## Título de app
 - En Android se define en el Widget MaterialApp, en la propiedad Title.
 - En IOS se ve en el folder **info.plist**, el cual puede verse al presion CMMD + P y escribir el nombre del archivo.
@@ -214,4 +222,13 @@ class WeatherScreen extends StatelessWidget {
 - A modo de colocar el texto en el 'flex-start' se envuelve con el Widget Align.
 - De igual manera, se puede definir en la propiedad de crossAxisAlignment en el Padding que envuelve todo el body.
 
-### Carousel de Forecast usando Row
+### Carousel de Forecast usando SingleChildScrollView y Row
+- Para el dise;o de las carta se usa Container para poder darle un ancho, un radio.
+  - Container no cuenta con la propiedad de BorderRadius, pero si con la propiedad de decoration, la cual en este caso debe pasarsele BoxDecoration.
+#### SingleChildScrollView
+- Por defecto el scroll es el eje vertical.
+- Se cambia el flujo del scroll por medio de la propiedad scrollDirection.
+#### Creacion de plantilla para tarjeta de Forecast
+- Asi como en React, se crea el Widget para poder renderizarlo por medio del mapeo de un arreglo y mostrar el numero de Widgets necesarios. 
+
+14:10
