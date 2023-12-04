@@ -1846,7 +1846,6 @@ class _CurrencyConverterMaterialPageState extends State<CurrencyConverterMateria
     )
 ```
 
-<<<<<<< HEAD
 ## Cupertino Design
 - Se pueden tener la estructura de los Widgets por medio de code snippets como stfl, los cuales son dados por la extension de Flutter y Dart.
 - Existen Widgets que son globales, es decir, que funcionan tanto para Cupertino como para Materials. Por ejemplo:
@@ -1892,7 +1891,8 @@ class MyCupertinoApp extends StatelessWidget {
     return const CupertinoApp(
       home: CurrencyConverterCupertinoPage(),
     );
-=======
+
+```
 ## Ciclo de vida de los Widgets.
 ### StatelessWidget
 - AL isntanciar un Widget se invoca primero al constructor y luego a la función build.
@@ -1933,12 +1933,10 @@ class _MyWidgetState extends State<MyWidget> {
   @override
   Widget build(BuildContext context) {
     return const Placeholder();
->>>>>>> 770dbfd4b6a4fc2c7f528abcb88d8ec97dd10eba
   }
 }
 ```
 
-<<<<<<< HEAD
 - Solo los Widgets relacionados a la UI cambian entre Cupertino y Materials.
 - Los Widgets homologos para Cupertino son:
     - Scaffold - CupertinoPageScaffold
@@ -1952,7 +1950,6 @@ class _MyWidgetState extends State<MyWidget> {
 - En IOS los titulos siempre estan centrados, por lo que la propiedad para titulos es middle en lugar de title.
 -
 
-=======
 #### didChangeDependencies
 - Se llama después de initState.
 - El método se invoca de igual manera cada que la pieza de data, a la cual el widget depende, se actualiza.
@@ -2080,7 +2077,6 @@ class _MyWidgetState extends State<MyWidget> {
 #### setState
 - Se usa para volver a correr la función build
  
->>>>>>> 770dbfd4b6a4fc2c7f528abcb88d8ec97dd10eba
 ## Buenas practicas
 - La propiedad child en un Widget siempre tiene que estar al final de la lista en las propiedades.
 
