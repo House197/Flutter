@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:weather_app/additional_info_card.dart';
+import 'package:weather_app/weather_forecast_item.dart';
 
 class WeatherScreen extends StatelessWidget {
   const WeatherScreen({super.key});
@@ -82,187 +84,56 @@ class WeatherScreen extends StatelessWidget {
             const SizedBox(
               height: 20,
             ),
-            SingleChildScrollView(
+            const SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Card(
-                    elevation: 6,
-                    child: Container(
-                      width: 100,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '03:00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.cloud),
-                          Text('300')
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 6,
-                    child: Container(
-                      width: 100,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '03:00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.cloud),
-                          Text('300')
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 6,
-                    child: Container(
-                      width: 100,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '03:00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.cloud),
-                          Text('300')
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 6,
-                    child: Container(
-                      width: 100,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '03:00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.cloud),
-                          Text('300')
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 6,
-                    child: Container(
-                      width: 100,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '05:00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.cloud),
-                          Text('300')
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 6,
-                    child: Container(
-                      width: 100,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '05:00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.cloud),
-                          Text('300')
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 6,
-                    child: Container(
-                      width: 100,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Column(
-                        children: [
-                          Text(
-                            '03:00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.cloud),
-                          Text('300')
-                        ],
-                      ),
-                    ),
-                  ),
+                  HourlyForecastItem(),
+                  HourlyForecastItem(),
+                  HourlyForecastItem(),
+                  HourlyForecastItem(),
+                  HourlyForecastItem(),
+                  HourlyForecastItem(),
                 ],
               ),
             ),
             const SizedBox(
               height: 20,
             ),
-            const Placeholder(
-              fallbackHeight: 150,
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Additional Information',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
+            const SizedBox(
+              height: 20,
+            ),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                AdditionalInfoCard(
+                  icon: Icons.water_drop,
+                  label: 'Humidity',
+                  value: '90',
+                ),
+                AdditionalInfoCard(
+                  icon: Icons.water_drop,
+                  label: 'Humidity',
+                  value: '90',
+                ),
+                AdditionalInfoCard(
+                  icon: Icons.water_drop,
+                  label: 'Humidity',
+                  value: '90',
+                ),
+              ],
+            )
           ],
         ),
       ),

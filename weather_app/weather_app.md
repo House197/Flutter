@@ -228,7 +228,136 @@ class WeatherScreen extends StatelessWidget {
 #### SingleChildScrollView
 - Por defecto el scroll es el eje vertical.
 - Se cambia el flujo del scroll por medio de la propiedad scrollDirection.
+
+``` dart
+const SingleChildScrollView(
+  scrollDirection: Axis.horizontal,
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      HourlyForecastItem(),
+      HourlyForecastItem(),
+      HourlyForecastItem(),
+      HourlyForecastItem(),
+      HourlyForecastItem(),
+      HourlyForecastItem(),
+    ],
+  ),
+),
+```
+
+#### Creacion de plantilla para tarjeta de Additional information
+
+- Para poder personalizar el Widget se pasan los valores deseados al constructor.
+  - Se declaran los atributos como final, ya que los widgets son inmutables.
+  - Los Widgets que reciben los atributos no pueden declararse como const, ya que ahora son dinamicos.
+
+
+``` dart
+class AdditionalInfoCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  const AdditionalInfoCard(
+      {super.key,
+      required this.icon,
+      required this.label,
+      required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 30,
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w100),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+```
+
+- Los valores se pasan de la siguiente manera:
+
+``` dart
+const Row(
+  mainAxisAlignment: MainAxisAlignment.spaceAround,
+  children: [
+    AdditionalInfoCard(
+      icon: Icons.water_drop,
+      label: 'Humidity',
+      value: '90',
+    ),
+    AdditionalInfoCard(
+      icon: Icons.water_drop,
+      label: 'Humidity',
+      value: '90',
+    ),
+    AdditionalInfoCard(
+      icon: Icons.water_drop,
+      label: 'Humidity',
+      value: '90',
+    ),
+  ],
+)
+```
+
+
 #### Creacion de plantilla para tarjeta de Forecast
 - Asi como en React, se crea el Widget para poder renderizarlo por medio del mapeo de un arreglo y mostrar el numero de Widgets necesarios. 
+
+``` dart
+class HourlyForecastItem extends StatelessWidget {
+  const HourlyForecastItem({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 6,
+      child: Container(
+        width: 100,
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 12.0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Column(
+          children: [
+            Text(
+              '05:00',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Icon(Icons.cloud),
+            Text('300')
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
 
 14:10
