@@ -310,14 +310,14 @@ const Row(
       value: '90',
     ),
     AdditionalInfoCard(
-      icon: Icons.water_drop,
-      label: 'Humidity',
-      value: '90',
+      icon: Icons.air,
+      label: 'Wind Speed',
+      value: '7.5',
     ),
     AdditionalInfoCard(
-      icon: Icons.water_drop,
-      label: 'Humidity',
-      value: '90',
+      icon: Icons.beach_access,
+      label: 'Pressure',
+      value: '1000',
     ),
   ],
 )
@@ -360,4 +360,38 @@ class HourlyForecastItem extends StatelessWidget {
 }
 ```
 
-14:10
+## Llamadas a API para recuperar data del clima
+
+### Instalación de Flutter HTTP
+
+- Se instala la dependencia de Flutter HTTP.
+  - En el archivo de pubspec.yaml se agregan las dependencias necesarias en la sección de dependencies.
+  - Se visita la página de la depnedencia para obtener la versión más reciente. (https://pub.dev/packages/http)
+  - El archivo pubspec.yaml luce de la siguiente manera.
+
+```yaml
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  http: ^1.1.0
+```
+
+  - Se usa esa versión de http debido a que el SDK del proyecto no es válida para vesiones superiores.
+```
+  Because weather_app depends on http >=1.1.1 which requires SDK version >=3.2.0 <4.0.0, version solving failed.
+
+
+  You can try the following suggestion to make the pubspec resolve:
+  * Consider downgrading your constraint on http: flutter pub add dev:http:^1.1.0
+  exit code 1
+```
+
+- Al guardar el archivo visual studio corre el comando para descargar la dependencia.
+
+``` bash
+flutter pub get
+```
+
+### Uso de dependencia HTTP
+
+14:41
