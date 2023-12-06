@@ -370,7 +370,7 @@ class HourlyForecastItem extends StatelessWidget {
   - El archivo pubspec.yaml luce de la siguiente manera.
 
 ```yaml
-dev_dependencies:
+dependencies:
   flutter_test:
     sdk: flutter
   http: ^1.1.0
@@ -394,4 +394,52 @@ flutter pub get
 
 ### Uso de dependencia HTTP
 
-14:41
+- Para poder llamar a la AP loca la logica en un Stateful Widget en weather screen.
+- A la clases stateless de Weather_Screen se convierte en Stateful presionando CTRL ALT R.
+  - Se decodifica la respuesta JSON por medio de la funcion jsonDecode.
+  - No se recomienda utilizar late para inicializar las variables que se alimentaran de la API, ya que late requiere que la variable inicialice antes de la funcion build, lo cual no es el caso ya que el codigo de la llamada de la API sera ejecutado despues de la build function aunque la llamada a la funcion este initState, el cual se ejecuta antes de la funcion build.
+- Cuando se inicializa la variable usando por ejemplo double temp = 0 para cuando la API se encargue de actualizar el valor de la variable la funcion BUILD ya se habra ejecutado, pero no se estara volviendo a correr la funcion BUILD. Entonces, se debe usar setState para volver a correr la funcion BUILD una vez que la API ya ha actualizado los valores.
+
+``` dart
+class _WeatherScreenState extends State<WeatherScreen> {
+  double temp = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    getCurrentWeather();
+  }
+
+  Future getCurrentWeather() async {
+    String cityName = 'Mexico';
+    try {
+      final res = await http.get(
+        Uri.parse(
+            'https://api.openweathermap.org/data/2.5/forecast?q=$cityName&appid=a17d8aca84846ee500b328a8df181e45'),
+      );
+
+      final data = await jsonDecode(res.body);
+
+      if (data['cod'] != '200') {
+        throw 'An unexpected error occurred';
+      }
+
+      setState(() {
+        temp = data['list'][0]['main']['temp'];
+      });
+    } catch (e) {
+      e.toString();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+  --- Resto del codigo ---
+```
+
+### Loading Indicator en lo que carga respuesta de la API
+- Se usa el Widget CircularProgressIndicator.
+- Por medio de un ternario se decide si renderizar el cuerpo de la aplicacion o un indicador de carga.
+
+15:04
