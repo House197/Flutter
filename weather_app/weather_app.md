@@ -442,4 +442,46 @@ class _WeatherScreenState extends State<WeatherScreen> {
 - Se usa el Widget CircularProgressIndicator.
 - Por medio de un ternario se decide si renderizar el cuerpo de la aplicacion o un indicador de carga.
 
+``` dart
+ @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Weather App',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+              onPressed: () {
+                print('refresh');
+              },
+              icon: const Icon(Icons.refresh)),
+        ],
+      ),
+      body: temp == 0
+          ? const CircularProgressIndicator()
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+```
+
+## FutureBuilder Widget
+
+- En lugar de declarar una variable variable que se le asigna el resultado de la llamada de la API se usa FutureBuilder.
+- Sus campos son:
+  - future
+    - Se le pasa una funcion de tipo Future (getCurrentWeather).
+  - builder
+    - Se soloca una funcion con los argumentos:
+      - context
+      - snapshot
+        - Es una clase que perminta gestionar estados en la aplicacion.
+        - Por medio de su atributo connectionState se puede observar si la llamada a la API se encuentra en busqueda o ya tiene los datos solicitados.
+
+- La funcion que llama a la API ya no requiere invocar setState, solo retornar la data.
+
 15:04
