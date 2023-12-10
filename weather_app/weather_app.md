@@ -410,7 +410,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
     getCurrentWeather();
   }
 
-  Future getCurrentWeather() async {
+  Future<Map<String, dynamic>> getCurrentWeather() async {
     String cityName = 'Mexico';
     try {
       final res = await http.get(
@@ -424,11 +424,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
         throw 'An unexpected error occurred';
       }
 
-      setState(() {
-        temp = data['list'][0]['main']['temp'];
-      });
+      return data;
     } catch (e) {
-      e.toString();
+      throw e.toString();
     }
   }
 
@@ -437,6 +435,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
     return Scaffold(
   --- Resto del codigo ---
 ```
+
+- No olvidar que es buena prácticar agregar el tipo de dato que retorna una función de tipo Future.
 
 ### Loading Indicator en lo que carga respuesta de la API
 - Se usa el Widget CircularProgressIndicator.
@@ -483,5 +483,409 @@ class _WeatherScreenState extends State<WeatherScreen> {
         - Por medio de su atributo connectionState se puede observar si la llamada a la API se encuentra en busqueda o ya tiene los datos solicitados.
 
 - La funcion que llama a la API ya no requiere invocar setState, solo retornar la data.
+- Por medio de los métodos de snapshot se renderiza dinámicamente el progress indicator o el cuerpo de la aplicación.
+  - Por medio del método hasError se puede también renderizar un Widget para cuando la llamada de la API tuvo algún error.
+    - El mensaje de error se define al momento en el que se verifica que data['cod'] sea 200, de lo contrario se usó throw.
+
+``` dart
+      body: FutureBuilder(
+        future: getCurrentWeather(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator.adaptive();
+          }
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+```
+
+- Se usa adaptive en el Progress Indicator para garantizar que se renderice el del sistema operativo correspondiente.
+- El código de Future Builder luce así hasta el momento.
+
+``` dart
+      body: FutureBuilder(
+        future: getCurrentWeather(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator.adaptive(),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Text(snapshot.error.toString());
+          }
+
+          final data = snapshot
+              .data!; // Se usa ! para indicar a Flutter que esta variable no es null ni va a tener un error hasta este punto del código.
+
+          final currentWeatherData = data['list'][0];
+
+          final currentTemp = currentWeatherData['main']['temp'];
+          final currentSky = currentWeatherData['weather'][0]['main'];
+          final pressure = currentWeatherData['main'] ['pressure'];
+          final humidity = currentWeatherData['main']['humidity'];
+          final windSpeed = currentWeatherData['wind']['speed'];
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: Card(
+                    elevation: 10,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              Text(
+                                '$currentTemp K',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Icon(
+                                currentSky == 'Clouds' || currentSky == 'Rain'
+                                    ? Icons.cloud
+                                    : Icons.sunny,
+                                size: 64,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '$currentSky',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Weather Forecast',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                const SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      HourlyForecastItem(
+                          icon: Icons.tornado, hour: '01:00', value: '150'),
+                      HourlyForecastItem(
+                          icon: Icons.sunny, hour: '02:00', value: '230'),
+                      HourlyForecastItem(
+                          icon: Icons.cloud, hour: '03:00', value: '250'),
+                      HourlyForecastItem(
+                          icon: Icons.night_shelter,
+                          hour: '04:00',
+                          value: '353'),
+                      HourlyForecastItem(
+                          icon: Icons.water_damage,
+                          hour: '05:00',
+                          value: '321'),
+                      HourlyForecastItem(
+                          icon: Icons.water_damage,
+                          hour: '06:00',
+                          value: '542'),
+                    ],
+                  ),
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Additional Information',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AdditionalInfoCard(
+                      icon: Icons.water_drop,
+                      label: 'Humidity',
+                      value: '$humidity',
+                    ),
+                    AdditionalInfoCard(
+                      icon: Icons.air,
+                      label: 'Wind Speed',
+                      value: '$windSpeed',
+                    ),
+                    AdditionalInfoCard(
+                      icon: Icons.beach_access,
+                      label: 'Pressure',
+                      value: '$pressure',
+                    ),
+                  ],
+                )
+              ],
+            ),
+          );
+        },
+      ),
+```
+
+## Iterar en una lista de objetos para renderizar Widgets 
+- Se puede hacer con un For loop.
+  - No se deben usar {} en Flutter code.
+
+``` dart
+               SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int i = 1; i <= 5; i++)
+                        HourlyForecastItem(
+                          icon: data["list"][i]['weather'][0]['main'] ==
+                                      'Clouds' ||
+                                  data["list"][i]['weather'][0]['main'] ==
+                                      'Rain'
+                              ? Icons.cloud
+                              : Icons.sunny,
+                          hour: data["list"][i]["dt"].toString(),
+                          value: data["list"][i]['main']['temp'].toString(),
+                        ),
+                    ],
+                  ),
+                ),
+```
+
+- EL problema con lo anterior es que si se tienen varias iteraciones entonces todos los Widgets estarían presentes, lo que llevaría a un impacto al desempeño de la aplicación. 
+- Se recomienda usar ListView.Builder en lugar de SingleChildScrollView.
+- Si se desearan retornar varios elementos del For Loop entonces se debe agregar ... y envolver todo en una lista.
+
+``` dart
+               SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int i = 1; i <= 5; i++) ... [
+                        HourlyForecastItem(
+                          icon: data["list"][i]['weather'][0]['main'] ==
+                                      'Clouds' ||
+                                  data["list"][i]['weather'][0]['main'] ==
+                                      'Rain'
+                              ? Icons.cloud
+                              : Icons.sunny,
+                          hour: data["list"][i]["dt"].toString(),
+                          value: data["list"][i]['main']['temp'].toString(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+```
+
+## ListView.Builder
+- Permite mostar los elemento a demanda.
+- Acepta los campos:
+  - itemCount
+    - Se especifican cuantos elementos se van a mostrar.
+  - itemBuilder.
+    - Debe retornar un Widget.
+    - Cuenta con los argumentos:
+      - context
+      - index
+- Se debe restringir la altura de este Widget, ya que por defecto trata de ocupar toda la altura.
+  - Se limita envolviendolo con un SizedBox.
+
+``` dart
+                SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                      itemCount: 5,
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, i) {
+                        final hourlyForecast = data["list"][i + 1];
+                        final hourlySky = hourlyForecast['weather'][0]['main'];
+                        final hourlyTemp =
+                            hourlyForecast['main']['temp'].toString();
+                        final time = hourlyForecast['dt_txt'].toString();
+                        return HourlyForecastItem(
+                          icon: hourlySky == 'Clouds' || hourlySky == 'Rain'
+                              ? Icons.cloud
+                              : Icons.sunny,
+                          hour: time,
+                          value: hourlyTemp,
+                        );
+                      }),
+```
+
+## Dar formato a la fecha usando 
+- En pub.dev se encuentran las librerías disponibles para Flutter.
+- Se usa intl para dar formato a las fechas.
+- Se presiona CMD + SHIFT + P para poder seleccionar la opción de agregar una dependencia (Dart: Add Dependency).
+  - Se escribe el nombre del paquete.
+- A continuación se convierte el valor de fecha dada por la API en tipo DateTime.
+  - Luego, se usa DateFormat para darle el formato deseado.
+
+``` dart
+                SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                      itemCount: 5,
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, i) {
+                        final hourlyForecast = data["list"][i + 1];
+                        final hourlySky = hourlyForecast['weather'][0]['main'];
+                        final hourlyTemp =
+                            hourlyForecast['main']['temp'].toString();
+                        final time = DateTime.parse(hourlyForecast['dt_txt']);
+                        return HourlyForecastItem(
+                          icon: hourlySky == 'Clouds' || hourlySky == 'Rain'
+                              ? Icons.cloud
+                              : Icons.sunny,
+                          hour: DateFormat.Hm().format(time),
+                          value: hourlyTemp,
+                        );
+                      }),
+                ),
+```
+
+## Refrescar llamada a la API.
+- Se recomienda guardar el valor de la función que llama a la API en una variable.
+  - Luego, el botón de refresh va a llamar a setState, en donde se colocará la reasignación de la variable con la función que llama a la API.
+
+``` dart
+class _WeatherScreenState extends State<WeatherScreen> {
+  late Future<Map<String, dynamic>> weather;
+
+  @override
+  void initState() {
+    super.initState();
+    weather = getCurrentWeather();
+  }
+
+  Future<Map<String, dynamic>> getCurrentWeather() async {
+    String cityName = 'Puebla';
+    try {
+      final res = await http.get(
+        Uri.parse(
+            'https://api.openweathermap.org/data/2.5/forecast?q=$cityName&units=metric&appid=a17d8aca84846ee500b328a8df181e45'),
+      );
+
+      final data = await jsonDecode(res.body);
+
+      if (data['cod'] != '200') {
+        throw 'An unexpected error occurred';
+      }
+
+      return data;
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Weather App',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+              onPressed: () {
+                setState(() {
+                  weather = getCurrentWeather();
+                });
+              },
+              icon: const Icon(Icons.refresh)),
+        ],
+      ),
+      body: FutureBuilder(
+        future: weather,
+        builder: (context, snapshot) {
+```
+
+# Teoría
+
+- El lema de FLutter es:  
+  - Constraints go down
+  - Sized go up
+
+- Flutter no traduce los Widgets a componentes nativos del sistema operaitov, sino que pinta algo en el canvas usando su propio sistema de renderizado.
+  - El sistema de renderizado que utiliza se llama Kia Graphics Engine, el cual está siendo reemplazado por Impeller.
+
+## Widget Tree
+- Representa la estructura de la UI por medio de la composición de múltiples Widgets.
+- Flutter se encarga del renderizado, por lo que el Widget Tree es el método para los desarrolladores para organizar la estrucura de la UI.
+
+## Widget
+- Es una configuración.
+- Es un objeto ligero con propiedades finales.
+  - Sus propiedades son finales porque un Widget es inmutable.
+
+## Render Object Tree
+- Hay tres tipos:
+  - LeafRenderObjectWidget
+    - Se usa para Widgets que no tienen hijo o hijos.
+    - Ejemplo: Error Widget.
+  - SingleChildRenderObjectWidget
+    - Se usa para Widgets que solo tienen un hijo.
+    - Ejempo: ColoredBox
+  - MultiChildRenderObjectWidget
+    - Se usa para Widgets que tienen múltiples hijos.
+- Lo que realmente se renderiza en la pantalla es un Render Object.
+  - Lo hace por medio de invocar métodos como:
+    - Render Object.
+    - Update Render Object.
+- Determina el tamaño, posición y representación visual de los Widgets.
+- Se encarga de tareas como: layout calculation, painting pixel en la pantalla.
+
+## Element Tree
+- Es el árbol que se encuentra entre el Widget Tree y Render Object Tree.
+- Es el reflejo de Widget Tree y es responsable de la gestión del ciclo de vida de Widgets y el estado mutable. 
+- Entonces, durante el mount de la aplicación los Widgets se crean, los cuales a su vez crean a un elemento correspondiente.
+  - Un Widget llama a la función createElement.
+    - Un StatelessWidget crea un stateless element.
+    - Un StatefulWidget crea un stateful element.
+- Se encarga de ejecutar el proceso de Reconciliation o Diffing.
+
+## BuildContext
+- Es una clase abstracta.
+- Es un Element.
+- Permite localizar un Widget en particular en el árbol de Widgets.
+- Se tiene acceso a Element por medio de BuildContext.
+
+## Conclusión
+- El árbol de Widgets se itera para encontrar cada Widget y luego un render object particular de Widget se crea.
 
 15:04

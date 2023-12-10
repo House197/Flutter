@@ -18,6 +18,7 @@ class HourlyForecastItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               hour,
@@ -25,9 +26,11 @@ class HourlyForecastItem extends StatelessWidget {
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Icon(icon),
-            Text(value)
+            Text('$value °C')
           ],
         ),
       ),
