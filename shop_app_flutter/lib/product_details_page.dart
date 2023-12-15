@@ -67,7 +67,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                         return GestureDetector(
                           onTap: () {
                             setState(() {
-                              selectedSize == size;
+                              selectedSize = size;
                             });
                           },
                           child: Padding(

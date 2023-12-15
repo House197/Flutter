@@ -475,7 +475,17 @@ class ProductCard extends StatelessWidget {
             )
 ```
 
+## Guardar articulos en carrito de compra (State Management)
+- El carrito de compra esta en otro stack.
+- State Management es accesible por todos los stacks. Puede verse como el pilar de la aplicacion (18:56:19)
 
+### Navegacion a carrito
+- En Scaffold se tiene otra propiedad, la cual es bottomNavigationBar.
+- Se coloca en el Scaffol de home_page.
+- Se mantiene regustro de la pagina que se ve actualmente por medio de la creacion de la variable currentPage de tipo entero.
+  - BottomNavigation requierede currentIndex y de una funcion (onTap).
+    - La function onTap de este Widget provee del argumento que da el indice del boton seleccionado, lo que permite actualizar la variable que lleva registro de la ventana que se visita.
+- Se extrae la lista de productos definida en home_page y se coloca en un Widget separado con la finalidad de poder switchear entre el Widet del carrito y la lista de productos.
 
 # Container y Decoration
 - Por medio de decoration es posible dar un radio a los bordes de un contenedor.
