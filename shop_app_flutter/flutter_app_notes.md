@@ -564,7 +564,127 @@ class _HomePageState extends State<HomePage> {
   - En otras palabras, puede verse como la API useContext en React.
 - En el fondo se usa el Widget llamado _InheritedTheme, el cual se extiende de InheritedWidget.
 
+## Provider
+- Es una libreria en pub.dev que ayuda con la gestion de estado para no tener que escribir codio usando Inerited Widget.
+- Se coloca el link dado en pub.dev para colocarlo en las dependencias de pubspec.yaml
+- ES Read-Only, por lo que se usa ChangeNotifierProvider para poder manipular el estado.
+- Tambien se tiene: FutureProvider y StreamProvider.
+
+``` yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.1
+```
+- Se envuelve a Material App principal (main.dart) con Provider.
+- Se empieza a crear el estado con la propiedad create.
+- El estado se accede por medio de:
+
+``` dart
+Widget build(BuildContext)
+  print(Provider.of<TIPO DE DATO>(context))
+```
+
+- Busca el Provider mas cercano en el Widget Tree. 
+
+### ChangeNotifierProvider
+- Permite modificar el estado.
+- Entonces, en lugar de envolver a Material App con Provider, se utiliza esta opcion.
+- La opcion no acepta un tipo de dato generico.
+  - Se debe usar ChangeNotifier().
+    - VIene de Flutter, no de Provider.
+    - Provee de una notificacion de cambio a lo que esta escuchando.
+  - Se debe crear un ChangeNotifier personzalizado, por lo que se crea un nuevo archivo (cart_provider.dart).
+
+``` dart
+import 'package:flutter/material.dart';
+
+class CartProvider extends ChangeNotifier {
+  final List<Map<String, dynamic>> cart = [];
+
+  void addProduct(Map<String, dynamic> product) {
+    cart.add(product);
+  }
+
+  void removeProduct(Map<String, dynamic> product) {
+    cart.remove(product);
+  }
+}
+```
+
+- La funcion de agregar al carrito se utiliza en el ElevatedButton ubicado en ProductsList.
+  - El tipo del Provider sera CartProvider.
+  - El producto no puede ser accedido en un stateful Widget, pero state provee de widget para poder acceder a elementos del constructor del Stateful Widget.
+  - Ya que solo se esta llamando a una funcion, se debe colocar listen false.
+
+``` dart
+  onPressed: () {
+  Provider.of<CartProvider>(context, listen: false)
+      .addProduct(widget.product);
+  },
+```
+
+- En un Stateful Widet el context se provee por State, por lo que context se mantiene el mismo en todo lado del Widget posibilitando su uso incluso fuera de la funcion build.
+- De esta forma, se puede declarar la funcion de addProduct fuera de build para poder definir liste a false.
+  - Por defecto esta en true, ya que eso indica que continuamente escucha los cambios.
+- Por medio de ScaffoldMessenger y SnackBar se indica al usuario si el producto ha sido agregado de forma correcta o no.
+
+``` dart
+class _ProductDetailsState extends State<ProductDetails> {
+  late int selectedSize;
+
+  void onTap() {
+    if (selectedSize != 0) {
+      Provider.of<CartProvider>(context, listen: false).addProduct(
+        {
+          'id': widget.product['id'],
+          'title': widget.product['title'],
+          'price': widget.product['price'],
+          'imageUrl': widget.product['imageUrl'],
+          'company': widget.product['company'],
+          'size': selectedSize
+        },
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Product added.'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a size!'),
+        ),
+      );
+    }
+  }
+
+
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      minimumSize: const Size(double.infinity, 50),
+    ),
+    onPressed: onTap,
+    child: const Row(
+```
+
+Para obtener los datos del estado en CartPage se utiliza Provider.
+
+``` dart
+class CartPage extends StatelessWidget {
+  const CartPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cart = Provider.of<CartProvider>(context).cart;
+    return Scaffold(
+      appBar: AppBar(
+```
+
 ## InheritedWidget
 - Se usa para State Management en Flutter.
+- Crea una 'tienda' en el tope del arbol de Widgets, la cual es accesible en todos lados.
 
-19:18:43
+19:49:40
