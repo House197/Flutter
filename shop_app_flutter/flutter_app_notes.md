@@ -479,6 +479,19 @@ class ProductCard extends StatelessWidget {
 - El carrito de compra esta en otro stack.
 - State Management es accesible por todos los stacks. Puede verse como el pilar de la aplicacion (18:56:19)
 
+## CartPage
+### ListTitle
+- Se usa en conjunto con ListView.builder.
+- Tiene las siguientes propiedades.
+  - leading. Permite colocar un Widget al inicio.
+  - title. Coloca el titulo de este Widget.
+  - subtitle. Coloca elemento por debajo de title.
+
+### CircularAvatar
+- Permite colocar una imagen en un borde circular.
+- Requiere la propiedad backgroundImage, la cual no pide un Widget como Image.asset, sino un Image Provider como AssetImage.
+
+
 ### Navegacion a carrito
 - En Scaffold se tiene otra propiedad, la cual es bottomNavigationBar.
 - Se coloca en el Scaffol de home_page.
@@ -486,6 +499,54 @@ class ProductCard extends StatelessWidget {
   - BottomNavigation requierede currentIndex y de una funcion (onTap).
     - La function onTap de este Widget provee del argumento que da el indice del boton seleccionado, lo que permite actualizar la variable que lleva registro de la ventana que se visita.
 - Se extrae la lista de productos definida en home_page y se coloca en un Widget separado con la finalidad de poder switchear entre el Widet del carrito y la lista de productos.
+- Se crea una lista de Widgets para almacenar las dos paginas con las que se hara esta navegacion (ProductsList, CartList).
+  - Por medio de la variable currentPage se conmuta la pagina a mostrar usando esta variable como indice del arreglo de Widgets creado.
+  - Se usa IndexedStack, el cual permite que el state se mantenga (por ejemplo, el scroll que se tenia en un Widget no se perdera).
+
+``` dart
+import 'package:flutter/material.dart';
+import 'package:shop_app_flutter/cart_page.dart';
+import 'package:shop_app_flutter/product_list.dart';
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int currentPage = 0;
+
+  List<Widget> pages = const [
+    ProductList(),
+    CartPage(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: currentPage,
+        children: pages,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentPage,
+        onTap: (value) {
+          setState(() {
+            currentPage = value;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_bag), label: 'Cart'),
+        ],
+      ),
+    );
+  }
+}
+```
 
 # Container y Decoration
 - Por medio de decoration es posible dar un radio a los bordes de un contenedor.
@@ -505,3 +566,5 @@ class ProductCard extends StatelessWidget {
 
 ## InheritedWidget
 - Se usa para State Management en Flutter.
+
+19:18:43
