@@ -678,9 +678,67 @@ class CartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cart = Provider.of<CartProvider>(context).cart;
+    final cart = context.watch<CartProvider>().cart;
+    //final cart = Provider.of<CartProvider>(context).cart;
     return Scaffold(
       appBar: AppBar(
+```
+
+### DialogBox para confirmar si el usuario quiere eliminar un objeto del carro
+- Se coloca en cart page.
+- Se puede usar ShowDialog en conjunto con Dialog o AlertDialog.
+- Con Dialog se puede intervenir en el diseno, mientras que con AlertDialog ya esta predefinido.
+
+``` dart
+         return ListTile(
+            leading: CircleAvatar(
+              backgroundImage: AssetImage(image),
+            ),
+            trailing: IconButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text(
+                        'Delete Product',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      content: const Text(
+                          'Are you sure you want to remove this product?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text(
+                            'No',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            context
+                                .read<CartProvider>()
+                                .removeProduct(cartItem);
+                            //Provider.of<CartProvider>(context, listen: false)
+                            //   .removeProduct(cartItem);
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Yes',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              )),
+                        )
+                      ],
+                    );
+                  },
+                );
+              },
 ```
 
 ## InheritedWidget
