@@ -70,6 +70,7 @@ class _ProductDetailsState extends State<ProductDetails> {
             padding: const EdgeInsets.symmetric(horizontal: 18.0),
             child: Image.asset(
               image,
+              height: 250,
             ),
           ),
           Container(

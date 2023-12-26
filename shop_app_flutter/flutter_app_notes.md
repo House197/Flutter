@@ -751,6 +751,188 @@ class CartPage extends StatelessWidget {
 ## GridView.builder
 - Se usa cuando no se sabe el número de elementos que el Widget va a tener.
 
+``` dart
+import 'package:flutter/material.dart';
+import 'package:shop_app_flutter/global_variables.dart';
+import 'package:shop_app_flutter/product_card.dart';
+import 'package:shop_app_flutter/product_details_page.dart';
+
+class ProductList extends StatefulWidget {
+  const ProductList({super.key});
+
+  @override
+  State<ProductList> createState() => _ProductListState();
+}
+
+class _ProductListState extends State<ProductList> {
+  final List<String> filters = const ['All', 'Adidas', 'Nike', 'Bata'];
+  late String selectedFilter;
+  // No se puede inicializar un valor inicializado para inicializar a otro, por ello se coloca late para poder incializaro en initState.
+
+  int currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // TODO: implement initState
+    selectedFilter = filters[0];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    //final size = MediaQuery.of(context).size; // (Inherited Widget)
+    final size = MediaQuery.sizeOf(
+        context); // Solo se escucha por cambios en el size en lugar de cambios en todas las opciones que tiene MediaQuery. (Inherited Model)
+    const border = OutlineInputBorder(
+      borderSide: BorderSide(
+        color: Color.fromRGBO(225, 225, 225, 1),
+      ),
+      borderRadius: BorderRadius.horizontal(
+        left: Radius.circular(50),
+      ),
+    );
+
+    return SafeArea(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  'Shoes\nCollection',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              const Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search',
+                    prefixIcon: Icon(
+                      Icons.search,
+                    ),
+                    border: border,
+                    enabledBorder: border,
+                    focusedBorder: border,
+                  ),
+                ),
+              )
+            ],
+          ),
+          SizedBox(
+            width: double.infinity,
+            height: 120,
+            child: ListView.builder(
+              itemCount: filters.length,
+              scrollDirection: Axis.horizontal,
+              itemBuilder: (context, index) {
+                final filter = filters[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedFilter = filter;
+                      });
+                    },
+                    child: Chip(
+                      label: Text(
+                        filter,
+                      ),
+                      labelStyle: const TextStyle(
+                        fontSize: 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 15,
+                      ),
+                      backgroundColor: selectedFilter == filter
+                          ? Theme.of(context).colorScheme.primary
+                          : const Color.fromRGBO(245, 247, 249, 1),
+                      side: const BorderSide(
+                        color: Color.fromRGBO(245, 247, 249, 1),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: size.width > 650
+                ? GridView.builder(
+                    itemCount: products.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, // Dos Rows
+                      childAspectRatio:
+                          2, // Permite definir el radio entre width y height de las grid
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = products[index]['title'];
+                      final price = products[index]['price'];
+                      final image = products[index]['imageUrl'];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) {
+                              return ProductDetails(product: products[index]);
+                            }),
+                          );
+                        },
+                        child: ProductCard(
+                          product: product as String,
+                          price: price as double,
+                          image: image as String,
+                          backgroundColor: index.isOdd
+                              ? const Color.fromRGBO(245, 247, 249, 1)
+                              : const Color.fromRGBO(216, 240, 253, 1),
+                        ),
+                      );
+                    },
+                  )
+                : ListView.builder(
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index]['title'];
+                      final price = products[index]['price'];
+                      final image = products[index]['imageUrl'];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) {
+                              return ProductDetails(product: products[index]);
+                            }),
+                          );
+                        },
+                        child: ProductCard(
+                          product: product as String,
+                          price: price as double,
+                          image: image as String,
+                          backgroundColor: index.isOdd
+                              ? const Color.fromRGBO(245, 247, 249, 1)
+                              : const Color.fromRGBO(216, 240, 253, 1),
+                        ),
+                      );
+                    },
+                  ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+```
+
+## Layout Builder
+- La propiedad de builder provee del argumento constraints, el cual contiene informacion como maxHeight, maxWidth, minHeight y minWidth.
+- El listado de opciones anterior se calcula por medio de las constraints dadas por algun otro Widget, como SizedBox si estuviera envolviendo a Layout Builder.
+- Se diferencia de Media Query en que Media Query toma todo el size del dispositivo mientras que Layout toma las restriccoines impuestas por los Widgets padre.
+
 # Pasos para uso de Provider
 - Provider es un widget de solo lecture.
   - No cuenta con métodos de Update.
@@ -760,4 +942,6 @@ class CartPage extends StatelessWidget {
     - notifyListeners usa setState detrás de escena.
   - Se usa context.watch cuando todos los widgets hijos necesitan de un valor en particular.
     - Para evitar que todo el UI tenga un rebuild y solo el Widget en donde se ha modificado el valor se tiene que envolver al Widget deseado con el Widget Consumer.
-19:49:40
+
+## If
+- Si se usa en UI (al nivel de un Widget) no se colocan {}, pero si se usa en un builder entonces si se debe colocar.
