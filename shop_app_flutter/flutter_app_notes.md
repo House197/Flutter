@@ -745,4 +745,19 @@ class CartPage extends StatelessWidget {
 - Se usa para State Management en Flutter.
 - Crea una 'tienda' en el tope del arbol de Widgets, la cual es accesible en todos lados.
 
+## Media queries 
+- Provee de información tal como el tamaño de la pantalla o el sistema en donde corre la app.
+
+## GridView.builder
+- Se usa cuando no se sabe el número de elementos que el Widget va a tener.
+
+# Pasos para uso de Provider
+- Provider es un widget de solo lecture.
+  - No cuenta con métodos de Update.
+- Se usa ChangeNotifierProvider para poder usar métodos Update.
+  - Se requiere crear un modelo de data, en donde en este caso se creó cart_provider.
+  - Se debe usar notifyListeners en el modelo para indicar al Providewr que algo ha cambiado para poder disparar un rebuild.
+    - notifyListeners usa setState detrás de escena.
+  - Se usa context.watch cuando todos los widgets hijos necesitan de un valor en particular.
+    - Para evitar que todo el UI tenga un rebuild y solo el Widget en donde se ha modificado el valor se tiene que envolver al Widget deseado con el Widget Consumer.
 19:49:40
