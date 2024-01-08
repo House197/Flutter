@@ -1538,6 +1538,301 @@ ElevatedButton(
 ),
 ```
 
+## AppBar con Scaffold
+- Scaffold acepta la propiedad appBar ademas de body.
+- Se usa el Widget AppBar, el cual cuenta con las propiedades:
+    - backgroundColor.
+    - elevation.
+    - title.
+- El estilo del texto se da en la propiedad de style en lugar de hacerlo directamente en el Widget de Text.
+
+``` Dart
+Scaffold(
+      appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 114, 188, 224),
+        elevation: 0, // Quita linea de bottom que le da 
+        title: const Text('Currency Converter', 
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 10
+        )),
+      ),
+)
+```
+
+## Logica de conversion
+- En un StatelessWidget no se puede colocar una variable como int variableName
+    - Si se desea hacer eso entonces la variable se debe colocar dentro de la funcion build en lugar del nivel superior de la clase.
+    - Se puede colocar una variable en el nivel superior de una funcion, se debe declarar como final.
+- Recuperar un valor de un TextField.
+    - Se requiere de un Text Editing Controller, el cual se define en el nivel superior de la funcion Build
+    - Se coloca ahi debido a que TextEditingController no es un constructor constante, por lo que colocarlo en el nivel superio de la clase provocaria tener que quitar const del constructor principal y de la instanciacion del Widget.
+    - TextEditingController puede pasarse a Text, ya que este cuenta con una propiedad dedicada para esa finalidad.
+    - TextEditingController contiene el valor escrito en el TextField.
+    - A continuacion, se debe colocar el valor contenido en textEditingController en el Widget Text, el cual ya no es const debido a que va a tener un valor mutable segun lo que se escriba.
+    - El valor de textEditingController puede almacenarse en una variable al momento de ejecutar el codigo del boton colocado.
+    - A modo de poder ver el texto en el Widget de Text se debe crear un estado. Si se hace rebuild al Widget las variables se vuelven a inicializar, por lo que se sigue sin poder ver el valor del TEXT con lo que se escribio en TextInput.
+        - Por esta razon se debe usar un Widget con estado (StatefulWidget).
+
+``` Dart
+class CurrencyConverterMaterialPage extends StatelessWidget {
+
+  const CurrencyConverterMaterialPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    double result = 0;
+    final TextEditingController textEditingController = TextEditingController();
+    print('hi');
+
+    // Se pueden guardar Widgets en variables, lo cual ayuda para un factor comun.
+    final border = OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: Colors.black,
+                        width: 2,
+                        style: BorderStyle.solid,
+                        strokeAlign: BorderSide.strokeAlignOutside
+                      ),
+                      borderRadius: BorderRadius.circular(60)
+                    );
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 114, 188, 224),
+        elevation: 0, // Quita linea de bottom que le da 
+        title: const Text('Currency Converter', 
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 10
+        )),
+      ),
+      body: ColoredBox(
+        color: const Color.fromARGB(255, 104, 167, 199), // Color de Center
+        child: Center(
+          child: ColoredBox(
+            color: const Color.fromARGB(111, 32, 104, 199), // Color de Column
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,        
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                result.toString(), 
+                style: const TextStyle(
+                  color: Color.fromARGB(255, 243, 244, 245),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 50,
+                )),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50.0),
+                  child: TextField(
+                    controller: textEditingController,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold
+                    ),
+                    decoration: InputDecoration(
+                      label: const Text('Converter', style: TextStyle(color: Colors.black)),
+                      hintText: 'Enter the amount to be converted.',
+                      prefixText: 'Amount: ',
+                      prefixIcon: const Icon(Icons.monetization_on),
+                      prefixIconColor: Colors.white,
+                      fillColor: Colors.white,
+                      filled: true,
+                      enabledBorder: border,
+                      focusedBorder: border,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                       result = double.parse(textEditingController.text);
+                       build(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.blueAccent,
+                      minimumSize: const Size(double.infinity, 50.0),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10))
+                      )
+                    ),
+                    child: const Text('Convert',)
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+} 
+```
+
+## StatefulWidget y State
+- Al extender la clase se debe crear un estado.
+- Al definir el estado se debe extender la clase abstracta State y colocar la implementacion de build para poder definir el estado.
+    - Luego, en la implementacion de createState de la extension de StatefulWidget se crea una instancia de la clase creada a partir de state.
+    - Esto se hace porque no se pueden tener variable mutables dentro de la extension de StatefulWidget, pero si dentro de la extension de la clase State.
+
+``` Dart
+class CurrencyConverterMaterialPagee extends StatefulWidget {
+
+  const CurrencyConverterMaterialPagee({super.key});
+
+  @override
+  State createState() => _CurrencyConverterMaterialPageState();
+}
+
+// State es una clase abstracta, por lo que se debe instanciarla. Se hace privada para que no pueda ser accedida fuera de este archivo.
+// Se indica que la clase esta relacionada con la de StatefulWidget al colocarle el tipo de la funcion por medio de <>
+
+class _CurrencyConverterMaterialPageState extends State<CurrencyConverterMaterialPagee> {
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold();
+  }
+}
+
+```
+
+- Por medio de initState se asegura que el codigo definido en ese bloque se ejecute antes de la funcion build.
+    - Es util cuando se tienen llamados a API o valores futuros, pero para la aplicacion actual en donde se tiene una variable que cambia de acuerdo a lo escrito en el Input no es necesario.
+-  La funcion BUILD debe ser lo menos expensive posible, ya que es lo que se puede ejecutar un gran numero de veces.
+    - La logica asincrona debe colocarse en el nivel superior de la clase.
+- En lugar de usar build(context) para volver a correr el BUILD se usa setState, en donde se ajusta el valor de la variable que se desea modificar.
+    - setState no debe ser llamado para eventos asincronos.
+    - No es necesario colocar las variables que se actualizan dentro, ya que setState indica a Flutter que debe volver a hacer BUILD al Widget y ajustar las variables necesarias.git pu
+12:30
+``` Dart
+import 'package:flutter/material.dart';
+
+class CurrencyConverterMaterialPage extends StatefulWidget {
+
+  const CurrencyConverterMaterialPage({super.key});
+
+  @override
+  State<CurrencyConverterMaterialPage> createState() {
+    print('createState');
+    return _CurrencyConverterMaterialPageState();
+  }
+}
+
+// State es una clase abstracta, por lo que se debe instanciarla. Se hace privada para que no pueda ser accedida fuera de este archivo.
+// Se indica que la clase esta relacionada con la de StatefulWidget al colocarle el tipo de la funcion por medio de <>
+
+class _CurrencyConverterMaterialPageState extends State<CurrencyConverterMaterialPage> {
+  
+  double result = 0;
+  final TextEditingController textEditingController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    // Se pueden guardar Widgets en variables, lo cual ayuda para un factor comun.
+    final border = OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: Colors.black,
+                        width: 2,
+                        style: BorderStyle.solid,
+                        strokeAlign: BorderSide.strokeAlignOutside
+                      ),
+                      borderRadius: BorderRadius.circular(60)
+                    );
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 114, 188, 224),
+        elevation: 0, // Quita linea de bottom que le da 
+        title: const Text('Currency Converter', 
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 10
+        )),
+      ),
+      body: ColoredBox(
+        color: const Color.fromARGB(255, 104, 167, 199), // Color de Center
+        child: Center(
+          child: ColoredBox(
+            color: const Color.fromARGB(111, 32, 104, 199), // Color de Column
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,        
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                result.toString(), 
+                style: const TextStyle(
+                  color: Color.fromARGB(255, 243, 244, 245),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 50,
+                )),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50.0),
+                  child: TextField(
+                    controller: textEditingController,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold
+                    ),
+                    decoration: InputDecoration(
+                      label: const Text('Converter', style: TextStyle(color: Colors.black)),
+                      hintText: 'Enter the amount to be converted.',
+                      prefixText: 'Amount: ',
+                      prefixIcon: const Icon(Icons.monetization_on),
+                      prefixIconColor: Colors.white,
+                      fillColor: Colors.white,
+                      filled: true,
+                      enabledBorder: border,
+                      focusedBorder: border,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                       setState(() {
+                          result = double.parse(textEditingController.text);
+                       });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.blueAccent,
+                      minimumSize: const Size(double.infinity, 50.0),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10))
+                      )
+                    ),
+                    child: const Text('Convert',)
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+- Todos los Widgets son inmutables (StatefulWidget y StatelessWidget), pero con StatefulWidget el State es el que lo hace mutable.
+- Const ayuda a que los Widgets definidos con esto no se vuelvan a renderizar cuando haya un Rebuild del Widget padre.
+    - Se usa SizedBox en lugar de Container para dejar un espacio entre Widgets, ya que SizedBox es const mientras Container no.
+
 ## Ejectuar codigo segun su se esta en debug, release o profile
 - Flutter provee de la variable kDebugMode. 
 ``` Dart
@@ -1551,6 +1846,237 @@ ElevatedButton(
     )
 ```
 
+## Cupertino Design
+- Se pueden tener la estructura de los Widgets por medio de code snippets como stfl, los cuales son dados por la extension de Flutter y Dart.
+- Existen Widgets que son globales, es decir, que funcionan tanto para Cupertino como para Materials. Por ejemplo:
+    - Center
+    - Text
+- Para poder correr cupertino se tiene que usar CupertinoApp en lugar de material App.
+
+``` Dart
+import 'package:currency_converter/currency_converter.dart';
+import 'package:currency_converter/currency_converter_cupertino.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
+void main () {
+  // MyApp lleva parentesis porque es una clase, por lo que se esta creando una instancia
+  // const indica que el constructor es una constante en el compile time, lo cual indica a Flutter que la instancia de Widget creada no debe ser recreada cada vez. Se debe recrear solo una vez.
+  runApp(const MyCupertinoApp());
+}
+
+// Todos los Widget son clases
+class MyApp extends StatelessWidget {
+
+  // Se crea el constructor de la clase para pasar la Key solicitadas por StatelessWidge, la cual se la pasa a la clase Widget que extiende.
+  const MyApp({super.key}); // Opcionalmente se toman parametros del constructor y se pasan al Widet que se extiende.
+  // super.key es un shorthand de lo siguiente:
+  // const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Se usa el design dado por Google, por lo que se retorna MaterialApp
+    return const MaterialApp(
+      // Se requiere de la propiedad home, la cual requiere de Scaffold que necesita la propiedad de body.
+      home: CurrencyConverterMaterialPage()
+    );
+  }
+}
+
+class MyCupertinoApp extends StatelessWidget {
+  const MyCupertinoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const CupertinoApp(
+      home: CurrencyConverterCupertinoPage(),
+    );
+
+```
+## Ciclo de vida de los Widgets.
+### StatelessWidget
+- AL isntanciar un Widget se invoca primero al constructor y luego a la función build.
+
+### StatefulWidget
+- AL instanciar a un Widget se invoca a la función definida createState, la cual otorga el uso de métodos especiales, tales como:
+- El ciclo de vida es:
+    - constructor.
+    - createState.
+    - initState.
+    - didChangeDependencies
+
+#### initState
+- Corre una vez cuando el constructor y createdState de la aplicación han sido invocados.
+- Permite inicializar variables con un valor ya que corre al inicio de la aplicación.
+    - Por ejemplo, se puede suscribir a streams y hacer conexiones con sockets.
+- super.initState() debe ser la primera línea de codigo a colocar en el bloque.
+    - super hace referencia al objeto padre en el state class (MyWidget).
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  late int abc;
+
+  @override
+  void initState() {
+    super.initState();
+    abc = 10;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+- Solo los Widgets relacionados a la UI cambian entre Cupertino y Materials.
+- Los Widgets homologos para Cupertino son:
+    - Scaffold - CupertinoPageScaffold
+        - CupertinoPageScaffold usa navigationBar en lugar de appBar.
+            - AppBar se reemplaza por CupertinoNavigationBar.
+        - Se usa child en lugar de body.
+    - Colors - CupertinoColors
+    - TextField - CupertinoTextField
+        - Se usa BoxDecoration en lugar de InputDecoration
+    - CupertinoButton en lugar de ElevatedButton
+- En IOS los titulos siempre estan centrados, por lo que la propiedad para titulos es middle en lugar de title.
+-
+
+#### didChangeDependencies
+- Se llama después de initState.
+- El método se invoca de igual manera cada que la pieza de data, a la cual el widget depende, se actualiza.
+- Se usa poco frecuente ya que el método build se invoca después.
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  late int abc;
+
+  @override
+  void initState() {
+    super.initState();
+    abc = 10;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+#### didUpdateWidget
+- Corre cada que el widget relacinado al estado se reemplaza por otro widget.
+- Se usa poco frencuente.
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  late int abc;
+
+  @override
+  void initState() {
+    super.initState();
+    abc = 10;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(covariant MyStatefulWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+#### dispose
+- Se usa para quitar las conexiones que tiene la app.
+- Previene memory leaks ya que permite limpiar streams, variables o conexiones de la aplicación.
+
+``` Dart
+class MyWidget extends StatefulWidget {
+  MyWidget({Key? key}) : super(key: key) {
+    print('from constructor');   
+  }
+
+  @override
+  State<MyWidget> createState() {
+    print('from createState');    
+    return _MyWidgetState();
+  }
+}
+
+class _MyWidgetState extends State<MyWidget> {
+
+  @override
+  void initState() {
+    super.initState();
+    print('from initState');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print('from didChangeDependencies');
+  }
+
+  @override
+  void didUpdateWidget(covariant MyStatefulWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    print('from didUpdateWidget');
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    print('from dispose');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+```
+
+#### setState
+- Se usa para volver a correr la función build
+ 
 ## Buenas practicas
 - La propiedad child en un Widget siempre tiene que estar al final de la lista en las propiedades.
 

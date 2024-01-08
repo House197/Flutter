@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 
-class CurrencyConverterMaterialPage extends StatelessWidget {
+class CurrencyConverterMaterialPage extends StatefulWidget {
 
   const CurrencyConverterMaterialPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<CurrencyConverterMaterialPage> createState() {
+    print('createState');
+    return _CurrencyConverterMaterialPageState();
+  }
+}
 
+// State es una clase abstracta, por lo que se debe instanciarla. Se hace privada para que no pueda ser accedida fuera de este archivo.
+// Se indica que la clase esta relacionada con la de StatefulWidget al colocarle el tipo de la funcion por medio de <>
+
+class _CurrencyConverterMaterialPageState extends State<CurrencyConverterMaterialPage> {
+  
+  double result = 0;
+  final TextEditingController textEditingController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
     // Se pueden guardar Widgets en variables, lo cual ayuda para un factor comun.
     final border = OutlineInputBorder(
                       borderSide: const BorderSide(
@@ -20,7 +34,7 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 114, 188, 224),
+        backgroundColor: const Color.fromARGB(255, 114, 188, 224),
         elevation: 0, // Quita linea de bottom que le da 
         title: const Text('Currency Converter', 
         textAlign: TextAlign.center,
@@ -39,14 +53,17 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,        
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text('0', style: TextStyle(
+                Text(
+                result.toString(), 
+                style: const TextStyle(
                   color: Color.fromARGB(255, 243, 244, 245),
                   fontWeight: FontWeight.bold,
                   fontSize: 50,
                 )),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 50.0),
                   child: TextField(
+                    controller: textEditingController,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold
                     ),
@@ -71,7 +88,9 @@ class CurrencyConverterMaterialPage extends StatelessWidget {
                   padding: const EdgeInsets.all(10.0),
                   child: ElevatedButton(
                     onPressed: () {
-                        print('I was clicked');
+                       setState(() {
+                          result = double.parse(textEditingController.text);
+                       });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.amber,
