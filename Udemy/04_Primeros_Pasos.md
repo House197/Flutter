@@ -81,8 +81,62 @@
 - runApp recibe el Widget de entrada, el cual debe ser MaterialApp.
 
 ## Scaffold
+- Implement aun diseño básico de material, y de las bases para coloca run menú lateral, snack-bars, appbars, bottom sheets y más elementos.
+- Puede verse como una nueva pantalla, por lo que debe estar desenlazado de Material App.
+- Permite aplicar un botón por medio de floatingActionButton.
 
+## Material App
+- Se puede quitar debug por medio de campo debugShowCheckedModeBanner con un valor de false.
+
+## Column
+- La razón por la que Column no puede ser const es porque Column, así como otros Widgets, necesitan saber las dimensiones del dispositivo para poder determinar específicamente en runtime esas dimensiones.
+- La palabra const se puede colocar en la lista de los Widgets que va a mostrar la columna.
+    - De igua manera, se puede colocar en los Widgets que lo requieran dentro de la lista en lugar de a toda la lista.
+
+## Estructura de directorios (estructura de filesystems)
+- No es obligatorio seguir la siguiente estructura.
+- Folde Presentation: se colocan los Widgets visuales
+    - Subfolder screens: son widgets que cubren toda la pantalla.
+    - Los Screens van a llevar sus Scaffolds.
+    - Cada archivo termina con el nombre _screen.dart
+
+
+## ThemeData
+- Se define en Material App con el campo de theme.
+- No es constante porque el tema va a variar dependiendo del dispositivo, ya que hay configuraciones como Light o Dark, los cuales no se conocen de antemano cuál usa el usuario.
+
+### Material Design 3
+- Dentro de ThemeData se usa useMaterial3.
+
+### colorSchemeSeed
+- Permite definir un color del cual Flutter se encarga de formar la paleta de colores.
+
+## Cambiar estado
+- Se tiene el concepto de estado global, el cual es accesible por todos los Widgets en el árbol de Widgets.
+- Por otro lado, se tiene el estado de Widget el cual es accesible por todos los Widgets hijos.
+- Se debe usar StatefulWidget para crear un estado en un Widget.
+    - Este Widget permite mantener un estado interno y ciclo de vida como su inicialización y destrucción.
+
+### StatefulWidget.
+- Se compone de dos clases.
+- La primera clase es la que extiende de StatefulWidget.
+- Maneja el método createState.
+    - Esa creación de estado no es más que la invocación de otra clase, la cual corresponde con la segunda clase.
+- La segunda clase es la construcción del Widget que se tenía hasta el momento antes de convertirlo en Stateful.
+    - Esta clase extiende de State, y la va a manejar el CounterScreen en este ejemplo.
+    - Se define el estado como una variable cualquiera, solo que no se coloca const o final.
+    - Al momento de actualizar el estado no hace falta usar this 'this.clockCounter', pero sí haría falta si hubiese una variable interna en el scope de la función que compartiera nombre con un atributo de la clase, por lo que this ayudaría a especificar que se desea usar el atributo en lugar de la variable interna del scope de la función.
+- Cada que cambia el estado se debe indicar a Flutter que renderice el widget. 
+    - Se usa setState.
+        - No hace falta colocar la actualización del estado dentro del callback de setState.
+- Flutter es eficiente al saber qué se debe renderizar, es decir, lo que fue afectado por el cambio, por lo que no todo el widget se renderiza, solo la parte afectada.
 # Notas
 - Los nombres de los archivos debe ser en minúscula y separados por guión bajo para dejar espacio entre palabras.
 - Un Widgfet no es más que una clase reutilizable que tiene cierta apariencia.
     - Todos los Widgets se crean de un Stateless Widget o Stateful Widget.
+- Se debe usar la palabra reservada constpraa los Widgets que jamás van a cambiar.
+    - Flutter crea un código especial que está encapsulado de tal manera que no va a poderse modificar.
+    - No se modifica desde su construcción. Entonces, mejora el rendimiento de la aplicación al tener Widgets que jamás van a cambiar por lo que Flutter los reconstruye rápidamente cuando toque reconstruir la aplicación.
+    - Puede verse como un lego, en donde los Widgets const ya son piezas pegadas, mientras que los Widgets que sí cambian son piezas individuales que se deben pegarse uno por uno.
+- El child siempre va al final de cada Widget.
+- No se puede usar if else en el return del Widget, solo if.
