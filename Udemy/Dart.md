@@ -665,18 +665,179 @@ void main() {
     - En el ejemplo se crea por medio de la simulación de una petición HTTP GET.
 - Se tiene el tipo de objeto **Future**, el cual puede ser cualquier valor (Future<dynamic>).
 - La palabra reservada Futuro presenta ciertos objetos y métodos.
+    - En este ejempo se usa delayed.
+- Al invocar una función que retorna un Future se puede usar then para especificar el código a ejecutar cuando la promesa se haya cumplido.
+- Se usa catchError para poder gestionar la exepciones.
 
 ``` dart
 void main() {
 
     print('Inicion del programa');
 
+    // Se usa el método then para especificar el código que se ejecuta cuando se cumpla la promesa.
+    httpGet('url_to_API').then( (value){
+        print( value );
+    }).catch( (err){
+        print('Error: $err');
+    });
+
     print('Fin del programa');
+
+    // Resultado:
+    //  1. Inicio del programa.
+    //  2. Fin del programa.
+    //  3. Respuesta de la petición http
 }
 
 Future<String> httpGet( String url ){
 
-    return Future.delayed();
+    return Future.delayed( const Duration(seconds: 1), () {
+        return 'Respuesta de la petición http';
+    } );
 
+}
+```
+
+## Async - Await
+- Async se usa para especificar que una función o método va a retornar un Future.
+    - En la función main también aplica definirla como async para poder usar await.
+    - El void es algún ejemplo específico en el cual es tolerable que sea asíncrono y tenga ese valor, ya que básicamente sería un Future<void>.
+        - En otras palabras, con void especifica que no importa el valor de retorno. No va a regresar nada.
+- Por medio de await se puede omitir la callback en este caso de Future.delayed, ya que permite esperar a que se complete el la petición.
+    - En otras palabras, await convierte los códigos síncronos como si fuera código síncrono y secuencial.
+- Await también funciona con funciones generadoras o Streams.
+- Con el uso de async y await se recomienda el uso de try y catch.
+
+``` dart
+void main() async {
+
+    print('Inicion del programa');
+
+    try {
+        final value = await httpGet('url_to_API');
+        print(value);
+    } catch (err) {
+        print('Error: $err');
+    }
+
+    print('Fin del programa');
+
+    // Resultado:
+    //  1. Inicio del programa.
+    //  2. Fin del programa.
+    //  3. Respuesta de la petición http
+}
+
+Future<String> httpGet( String url ) async {
+
+    await Future.delayed( const Duration(seconds: 1));
+    return 'Respuesta de la petición http';
+
+}
+```
+
+## Try, on, catch y finally
+- El código que englobe finally se ejecutará sin importar si la promesa fue exitosa o hubo un error.
+- Con on se puede reaccionar en función del tipo de exepción que se recibe o el tipo de error. 
+    - Se indica sobre qué se quiere reaccionar por medio del uso de Exception o Error.
+    - Si se entra en el ON, entonces el bloque de código en Catch se va a ignorar.
+    - Se entra en el catch cuando aparece un error o exepción que no se manejaron con el ON.
+    - Se recuperar el String de la exception por medio de un catch en conjunto con ON (es opcional el catch).
+
+``` dart
+void main() async {
+
+    print('Inicio del programa');
+
+    try {
+        final value = await httpGet('url_to_API');
+        print(value);
+    }  on Exception catch(err) {
+        print('Se tiene un exepción');
+        // print('Se tiene $err');
+    } catch (err) {
+        print('Error: $err');
+    } finally {
+        print('Fin del try y catch');
+    }
+
+    print('Fin del programa');
+
+    // Resultado:
+    //  1. Inicio del programa.
+    //  2. Se tiene un exepción.
+    //  3. Fin del try y catch.
+    //  4. Fin del programa.
+}
+
+Future<String> httpGet( String url ) async {
+
+    await Future.delayed( const Duration(seconds: 1));
+    throw Exception('No hay parámetros en el URL');
+    
+    //return 'Respuesta de la petición http';
+
+}
+```
+
+# Streams
+- Pueden ser retornados y usados como objetos, funciones o métodos.
+- Son un flujo de información que puede estar emitiendo valores peródicamente, una única vez, o nunca.
+    - Entonces, son un flujo de datos, los cuales pueden ser un solor valor, ningún valor o una serie de valores a lo largo del tiempo.
+- Ejemplo:
+    - En un video de Youtube, la barra de progreso sería la totalidad del Stream.
+    - Cada uno de los cuadros que se van viendo del vídeo es una emisión del Stream.
+- Se usa la palabra reservada Stream para crearlo.
+    - Se debe especificar el tipo de dato que fluye en el Stream.
+- Para que un Stream empiece a emitir valores debe haber algo escuchandolos.
+    - Al momento de invocar la función de tipo Stream se debe usar listen((){}).
+- El Stream emitirá valores hasta el final de la aplicación si no se utiliza take.
+    - Permite definir el número de emisiones deseadas.
+    - Al alcanzar el número deseados de emisiones se cierra el Stream y realiza la limpieza respectiva.
+- No hay un valor de retorno en un stream, solo hay emisiones.
+    - Se debe usar yield en lugar de return.
+
+``` dart
+void main() {
+    emitNumbers().listen( (values) {
+        print('Stream value: $value');
+    });
+}
+
+Stream<int> emitNumbers() {
+    return Stream.periodic( const Duration(seconds: 1), (value){
+        return value;
+    }).take(5);
+}
+```
+
+# async* y await
+- async* especifica que va a retornar un Stream.
+- Se puede omitir Stream al declarar el tipo de datos que retorna la función.
+- No hay un valor de retorno en un stream, solo hay emisiones.
+    - Se debe usar yield en lugar de return.
+- No hay un valor de retorno en un stream, solo hay emisiones.
+    - Se debe usar yield en lugar de return.
+    - Yield puede verse como ceder un valor.
+        - "Ten este valor ahora, luego ten este valor ahora..."
+
+``` dart
+void main() {
+    emitNumbers().listen( (int values) {
+        print('Stream value: $value');
+    });
+}
+
+Stream<int> emitNumbers() async* {
+
+    final valuesToEmit = [1, 2, 3, 4, 5];
+
+    for(int i in valuesToEmit) {
+        await Future.delayed( const Duration(seconds: 1));
+        // - No hay un valor de retorno en un stream, solo hay emisiones.
+        //- Se debe usar yield en lugar de return.
+        yield 1;
+
+    }
 }
 ```
