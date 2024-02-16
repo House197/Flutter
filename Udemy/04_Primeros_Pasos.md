@@ -130,6 +130,56 @@
     - Se usa setState.
         - No hace falta colocar la actualización del estado dentro del callback de setState.
 - Flutter es eficiente al saber qué se debe renderizar, es decir, lo que fue afectado por el cambio, por lo que no todo el widget se renderiza, solo la parte afectada.
+
+## counter_functions_screen.dart
+- Esta ventana reemplaza a la anterior.
+- Se puede renombrar un Widget colocandose en su nombre al momento de definir la clase y presionar Windows + F2, o FN + F2.
+- Se coloca en el AppBar la lógica para decrementar, reiniciar e incrementar el contador por medio del campo actions.
+    - Actions espera una lista de Widgets, por lo que se puede usar Column.
+    - Al usar Column en el campo floatingActionButton en luar de FloatingActionButton se aprecia que los botones los coloca hasta arribe del lado derecho, ya que por defecto esa es la posición inicial, lo cual no es el calo si se definiera directamente floatingActionButton.
+    - Se soluciona la posición con ayuda de la propiedad mainAxisAlignment del Widgete Column.
+    - Se usa Column para poder definir varios FloatingActionButton.
+- Además de Actions se tiene el campo de leading, el cual requiere de un ícono y un onPressed. En otras palabras, pide un solo Widget.
+
+### FloatingActionButton
+- Se le da forma con shape.
+- En el proyecto se ysa StadiumBorder en conjunto con shape, el cual ya hace que el botón sea circular.
+
+## Widgets personalizados
+- Permite seguir la metodología DRY, ya que en un solo Widget se encapsula la lógica y el estilo de un Widget.
+- La opción de Extract Widget que aparece en la lista al momento de hacer CTRL + . sobre el Widget deseado en el árbol de Widgets, permite separar el Widget en una clase independiente.
+    - Esto es posible cuando el Widget no tiene dependencias, como setState o variables definidas fuera de su Scope.
+- El botón va a recibir el icono y la función a ejecutar.
+- Se tiene la siguiente forma de declarar campos requeridos en un Widget:
+    - Hacer esto quita el named param, y ahora se debe pasar el ícono como primero argumento.
+``` dart
+class CustomWidget extends StatelessWidget {
+
+  final Icon icon;
+
+  const CustomWidget( this.icon, {
+    super.key,
+  });
+```
+
+- Para poder pasar una función como parámetros se puede guiar de la implementación que tiene FloatingActionButton al prenionar CTRL y hacer click sobre el Widget. Luego, se busca cómo implementa onPressed de la misma manera, haciendo CTRL + click sobre el elemento para ver la cadena de su implementación hasta llegar a la primera línea de su definición.
+- En este caso es: final VoidCallback? onPressed 
+    - Se aprecia que es opcional, por lo que si se coloca null al campo onPressed entonces la opción de dar click al botón se deshabilita.
+
+``` dart
+class CustomButton extends StatelessWidget {
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const CustomButton({
+    super.key,
+    required this.icon,
+    this.onPressed,
+  });
+
+```
+
 # Notas
 - Los nombres de los archivos debe ser en minúscula y separados por guión bajo para dejar espacio entre palabras.
 - Un Widgfet no es más que una clase reutilizable que tiene cierta apariencia.
