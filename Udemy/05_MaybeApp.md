@@ -173,6 +173,95 @@ class _ImageBubble extends StatelessWidget {
   - En esta carpeta se crea message_field_box.dart
 - Este Widget se ocupa en el Widget Column de chat_screen.dart.
 - Se usa decoration para darle estilo, así como Container.
+  - A diferencia de container que espera BoxDecoration, acá se usa InputDecoration.
+- En InputDecoration se tienen los siguientes campos:
+  - filled (bool), especifica si se debe llenar el fondo del elemento.
+  - suffixIcon, coloca un ícono al final del elemento, en donde se puede usar un IconButton para poder desempeñar una acción.
+  - enabledBorder. Se le pasa OutlineInputBorder para poder decorar el borde del Widget.
+  - focusedBorder coloca otro estilo al darle click al elemento, por lo que se recomienda colocar en una variable el estilo general deseado para el Widget para pasarlo tanto a enabledBorder como focusedBorder.
+- Se tiene campos que reaccionan a acciones:
+  - onFieldSubmitted
+  - onChanged, permite reaccionar a cada letra que se va ingresando el Widget.
+
+#### Comportamiento de FormField
+- Se usa TextEditingController, el cual se asocia a una variable final.
+  - Otorga control del input que se le asocie.
+  - Se asocia al TextFormField por medio del campo controller de TextFormField.
+- Por medio de textController.clear() se limpia el texto.
+- Se obtiene el valor escrito en el Widget en el IconButton definido en InputDecoratoin por medio de este controller: textController.value.text
+
+##### Mantener el foco en el TextFormField al dar Enter o dar en el botón de DONE del teclado del celular.
+- Por defecto, al seleccionar ese botón el teclado se va a cerrar y se pierde el foco.
+- Se utiliza FocusNode().
+- Se utiliza cuando un elemento necesita un foco.
+  - Esto aplica para Widgets que tengan el campo focusNode.
+- Se utiliza el método de focusNode requestFocus para darle foco al elemento.
+- Se puede cerrar el elemento al hacer click afuera por medio del campo de TextFormField por medio del campo onTapOutside, en donde en el cuerpo de su función se usa el método unfocus de FocusNode.
+
+``` dart
+import 'package:flutter/material.dart';
+
+class MessageFieldBox extends StatelessWidget {
+  const MessageFieldBox({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final textController = TextEditingController();
+    final colors = Theme.of(context).colorScheme;
+    final FocusNode focusNode = FocusNode();
+
+    final outlineInputBorder = UnderlineInputBorder(
+      borderSide: const BorderSide(color: Colors.transparent),
+      borderRadius: BorderRadius.circular(40),
+    );
+
+    final inputDecoration = InputDecoration(
+      hintText: 'End you message with a "?"',
+      enabledBorder: outlineInputBorder,
+      focusedBorder: outlineInputBorder,
+      filled: true,
+      suffixIcon: IconButton(
+        onPressed: () {
+          final textValue = textController.value.text;
+          print('Valor del text $textValue');
+          textController.clear();
+        },
+        icon: const Icon(
+          Icons.send_outlined,
+        ),
+      ),
+    );
+
+    return TextFormField(
+      onTapOutside: (event) {
+        focusNode.unfocus();
+      },
+      focusNode: focusNode,
+      controller: textController,
+      decoration: inputDecoration,
+      onFieldSubmitted: (value) {
+        textController.clear();
+        focusNode.requestFocus();
+      },
+      onChanged: (value) {},
+    );
+  }
+}
+```
+
+# Temas  Sección 6: Yes No - Maybe App - Funcionalidad
+- Gestores de estado
+- Mappers
+- Peticiones HTTP
+- Dio
+- Paquetes
+- Funciones que retornan valores como callbacks
+
+Scroll
+
+Provider
+
+Y más cosas
 
 # Notas
 - Cuando se tiene una función en un Widget, éstas usan un Callback. Entonces, este Widget no puede ser constante ya que se ejecúta códio en tiempo de tiempo de ejecución.
