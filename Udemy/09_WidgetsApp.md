@@ -381,8 +381,28 @@ FilledButton(onPressed: (){}, child: const Text('Filled Button'))
     - Permite cortar y dejar los bordes redondeados.
 - Debe envolver incluso a Material.
 
+## Cards
+- Son agrupadores que tinen cierto estilo.
+- Se usa Align para posicionar los elementos de la Column.
+    - Se envuelve a los widgets deseados con su respectivo align.
+
+
 # Notas
 - En ThemeData se puede configurar el estilo de todos los AppBars por medio de appBarTheme.
 - Los botones se deshabilitan colocando null en onPressed.
 - Se puede especificar el width de un SizedBox como double.infinity para que tome todo el ancho.
     - Si el Widget no tiene una dimensión especifica ocasiona errores.
+- Al momento de mapear una variable para renderizar widgets directamente en el árbol de widgets se puede usar ...variable.map()
+``` dart
+    return Column(
+      children: [
+
+        ...cards.map(
+          (card) =>
+              _CardType1(label: card['label'], elevation: card['elevation']),
+        )
+        
+      ],
+```
+- Mientras más elevación dado a un Widget más profundo es el color principal.
+- Se usa SingleChildScrollView para agregar scroll a un Widget.
