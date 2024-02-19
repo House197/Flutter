@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:yes_no_app/domain/entities/message.dart';
 
 class FriendMessageBubble extends StatelessWidget {
-  const FriendMessageBubble({super.key});
+  final Message message;
+  const FriendMessageBubble({
+    super.key,
+    required this.message,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final text = message.text;
+    final image = message.imageUrl!;
     final color = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -14,21 +21,23 @@ class FriendMessageBubble extends StatelessWidget {
             color: color.secondary,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 10,
             ),
             child: Text(
-              'Hola m',
-              style: TextStyle(color: Colors.white),
+              text,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ),
         const SizedBox(
           height: 5,
         ),
-        _ImageBubble(),
+        _ImageBubble(
+          image: image,
+        ),
         const SizedBox(
           height: 10,
         ),
@@ -38,7 +47,11 @@ class FriendMessageBubble extends StatelessWidget {
 }
 
 class _ImageBubble extends StatelessWidget {
-  const _ImageBubble({super.key});
+  final String image;
+  const _ImageBubble({
+    super.key,
+    required this.image,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +59,7 @@ class _ImageBubble extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: Image.network(
-        'https://yesno.wtf/assets/yes/3-422e51268d64d78241720a7de52fe121.gif',
+        image,
         width: size.width * 0.7,
         height: 150,
         fit: BoxFit.cover,
