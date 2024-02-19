@@ -371,6 +371,17 @@ Pensemos en los datasources como los orígenes de datos de nuestra aplicación, 
 
 Los repositorios son la forma en la que accedemos a los datasources, pensemos en el repositorio como el aula de clase en si, cada profesor (datasource) entra al aula de clase, y empieza a enseñar matemáticas, filosofía, geografía, etc... luego el profesor (datasource) se va del salón, y entra otro nuevo profesor (otro datasource) pero hace exactamente lo mismo que el profesor anterior pero enseña otro tema.
 
+## Flujo de arquitectura limpia
+1. UI.
+2. Presentación.
+3. Casos de uso. (Reglas de negocio de la institución)
+  - Por ejemplo, si se está en una institución financiera, se tiene:
+    - Crear un cliente.
+    - Mostrar saldos del cliente.
+  - Todo debería ser el mismo proceso sin importar en qué aplicación se esté usando.
+4. Repertorios y datasources.
+5. Información regresa al UI.
+
 ## Cración de archivos
 - La capa de dominio define las reglas que gobiernan a la aplicación.
 1. Crear carpetas domain -> datasources, domain -> repositories
@@ -444,6 +455,55 @@ class VideoPostsRepository extends VideoPostRepository {
   }
 }
 
+```
+
+## Llamar repository en Provider.
+- En el provider se elimina la lógica de datasource y se le agrega la propiedad de videosRepository.
+
+``` dart
+import 'package:flutter/material.dart';
+import 'package:tok_tik/domain/entities/video_post.dart';
+import 'package:tok_tik/domain/repositories/video_posts_repository.dart';
+
+class DiscoverProvider extends ChangeNotifier {
+  final VideoPostRepository videosRepository;
+  bool initialLoading = true;
+  List<VideoPost> videos = [];
+
+  DiscoverProvider({required this.videosRepository});
+
+  Future<void> loadNextPage() async {
+    final newVideos = await videosRepository.getTrendingVideosByPage(1);
+    // Se imagina que se tiene una página, pero aún no se implementa eso.
+    videos.addAll(newVideos);
+    initialLoading = false;
+    notifyListeners();
+  }
+}
+```
+
+### Pasar repository al Provider
+- Se crea la instancia del repositorio y se le pasa como argumento al provider.
+- El repositorio va a usar los videos locales.
+  - Si en el futuro cambia el datasource, se modifica lo que se le pasa al repository al inicializar pero debería seguir funcionando igual.
+
+``` dart
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final videoPostRepository =
+        VideoPostsRepositoryImpl(videosDatasource: LocalVideoDatasource());
+
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          lazy: false,
+          create: (_) => DiscoverProvider(videosRepository: videoPostRepository)
+            ..loadNextPage(),
 ```
 
 # Notas
