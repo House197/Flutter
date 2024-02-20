@@ -386,6 +386,128 @@ FilledButton(onPressed: (){}, child: const Text('Filled Button'))
 - Se usa Align para posicionar los elementos de la Column.
     - Se envuelve a los widgets deseados con su respectivo align.
 
+### Shape ( añadir borders )
+- Se le pasa RoundedRectangleBorder
+- Si no se le define el borde por defecto lo coloca en 0, formando un rectángulo.
+
+``` dart
+class _CardType2 extends StatelessWidget {
+  final String label;
+  final double elevation;
+
+  const _CardType2({required this.label, required this.elevation});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: colors.outline),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+      ),
+```
+
+### Tarjetas con relleno e imágenes
+- Para colocarle relleno se debe usar el color de Card.
+  - Los colores tienen la propiedadsurfaceVariant.
+- Para el relleno se ocupa Stack en lugar de Column.
+  - Con Stack el primer elemento en children es el que está más al fondo de la app, mientras que los que le siguen van acercandose al usuario.
+
+``` dart
+class _CardType3 extends StatelessWidget {
+  final String label;
+  final double elevation;
+
+  const _CardType3({required this.label, required this.elevation});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      color: colors.surfaceVariant,
+      elevation: elevation,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 5, 10, 10),
+        child: Column(children: [
+          Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(Icons.more_vert_outlined),
+                onPressed: () {},
+              )),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Text('$label - filled'),
+          )
+        ]),
+      ),
+    );
+  }
+}
+```
+
+#### Tarjeta con imagen
+- Para este caso se puede dar redondeo coin ayuda de la propiedad clipBehavior de Card.
+  - Lo más cercano a ClipRRect es Clip.hardEdge, el cual evita que el contenido haga overflow.
+
+``` dart
+class _CardType4 extends StatelessWidget {
+  final String label;
+  final double elevation;
+
+  const _CardType4({required this.label, required this.elevation});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      elevation: elevation,
+      clipBehavior: Clip.hardEdge,
+      child: Stack(children: [
+        Image.network(
+          'https://picsum.photos/id/${elevation.toInt()}/600/350',
+          height: 350,
+          fit: BoxFit.cover,
+        ),
+        Align(
+            alignment: Alignment.topRight,
+            child: Container(
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.only(bottomLeft: Radius.circular(20))),
+              child: IconButton(
+                icon: const Icon(Icons.more_vert_outlined),
+                onPressed: () {},
+              ),
+            )),
+        Align(
+          alignment: Alignment.bottomLeft,
+          child: Text('$label - filled'),
+        )
+      ]),
+    );
+  }
+}
+
+```
+
+# Sección 10. Continuación
+## Temas
+- RefreshIndicator
+- InfiniteScroll
+- ProgresIndicators
+- Lineales
+- Circulares
+- Controlados
+- Animaciones
+- Snackbars
+- Diálogos
+- Licencias
+- Switches, Checkboxes, Radios
+- Tiles
+- Listas
+- Pageviews
 
 # Notas
 - En ThemeData se puede configurar el estilo de todos los AppBars por medio de appBarTheme.
@@ -406,3 +528,6 @@ FilledButton(onPressed: (){}, child: const Text('Filled Button'))
 ```
 - Mientras más elevación dado a un Widget más profundo es el color principal.
 - Se usa SingleChildScrollView para agregar scroll a un Widget.
+  - El último elemento parace que le falta espacio entre él mismo y el bottom de la app, por lo que se recomienda poner un Sized Box con altura al final de la lista de widgets.
+- Con Stack el primer elemento en children es el que está más al fondo de la app, mientras que los que le siguen van acercandose al usuario.
+- En Image.Network se puede usa fit para indicarle a la imagen cómo ocupar el epsacio disponible, en donde se puede pasr BoxFit.cover.
