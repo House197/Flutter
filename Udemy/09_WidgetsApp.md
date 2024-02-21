@@ -817,7 +817,107 @@ class _UiControlsViewState extends State<_UiControlsView> {
 ```
 
 ## PageView App Tutorial
+- Se basa en PageView para hacer el swip de ventanas de forma horizontal.
+- Se colocar physics para poder tener el mismo comportamiendo en iOs y Android.
+- En _Slide se usa Image(image: AssetImage()) para pasar la imagen, pero se pudo haber hecho también con Image.asset
 
+### Determinar último slide
+- Se tiene el campo de controller en PageView.
+- Todos los widgets que hacen un movimiento de slide tienen un controlador.
+  - ListView.
+  - SinglePageScrollView.
+  - PageView.
+- Se debe usar un stateful widget para poder saber el slide actual por medio de la variable que contendrá el controller.
+  - El pageViewController tiene la propiedad page para indicar la page en donde se encuentra.
+    - El máximo es 1 y el mínimo es 0.
+    - Cada que se va haciendo el movimiento del swipe se van incrementando ese valor.
+- Se define la variable que contiene el controlador.
+  - Con init se le agrega un listener a la variable del controlado, en donde se puede determinar la page actual.
+
+``` dart
+class _AppTutorialScreenState extends State<AppTutorialScreen> {
+  //late final PageController pageViewController;
+  final PageController pageViewController = PageController();
+  bool endReached = false;
+  @override
+  void initState() {
+    super.initState();
+    pageViewController.addListener(() {
+      final page = pageViewController.page ?? 0;
+      //Por si aún no se ha asignado el controlador.
+      if (!endReached && page >= (slides.length - 1.5)) {
+        setState(() {
+          endReached = true;
+        });
+      }
+      print("${pageViewController.page}");
+    });
+  }
+  @override
+  void dispose() {
+    pageViewController.dispose();
+    super.dispose();
+  }
+
+```
+
+## InfiniteScroll
+- Se usa ListView.builder para cargar las imágenes, ya que permite renderizar las imágenes que van a entrar a pantalla en lugar de renderizar todas de golpe.
+- Se usa FadeInImage para colocar una imagen por defecto en lo que carga la que debe.
+
+``` dart
+FadeInImage(
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: 300,
+              placeholder: AssetImage('assets/images/jar-loading.gif'),
+              image: NetworkImage(
+                  'https://picsum.photos/id/${imagesIds[index]}/500/300'),
+            );
+```
+
+- Para que el ListView ocupe el espacio en blanco que aparece en la pantalla se envuelve con el widget MediaQuery.removePadding, usando su campo removeTop en true. Así como removeBottom para que ocupe el espacio de abajo.
+
+``` dart
+class _InfiniteScrollScreenState extends State<InfiniteScrollScreen> {
+  List<int> imagesIds = [1, 2, 3, 4, 5];
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: MediaQuery.removePadding(
+        context: context,
+        removeBottom: true,
+        removeTop: true,
+        child: ListView.builder(
+            itemCount: imagesIds.length,
+            itemBuilder: (context, index) {
+```
+
+### Imágenes infinitas
+- Se tiene la lisya imagesIds, la cual va pasando el id de la imagen.
+  - Se le van a ir agregando elementos.
+
+``` dart
+class _InfiniteScrollScreenState extends State<InfiniteScrollScreen> {
+  List<int> imagesIds = [1, 2, 3, 4, 5];
+
+  void addFiveImages() {
+    final lastId = imagesIds.last;
+    imagesIds.addAll([1, 2, 3, 4, 5].map((e) => lastId + e));
+  }
+
+```
+
+- Por medio de un scroll controller se va a mandar a llamar la función.
+  - El controller se va a colcoar en el ListView.
+  - Por medio de un listener y de position.maxScrollExtent para saber el límite del scroll se hace esto.
+  - Se coloca un threshold para llamar a la función un poco antes de llegar al fondo.
+  - A pesar de que Flutter va a estar disparando esta parte de forma seguida y haciendo la evaluación, no tiene tanto impacto ya que no se hace un redibujo por medio de setState.
+  - Se simula una acción sincrona para dar la impresión que se cargan nuevas imágenes.
+  - Por medio de una bandera se asegura que la función que carga la acción simulada sincrona no se dispare varias veces.
+  - Se debe verificar que el Widget esté montado antes de mandar el setState.
+    - Esto puede ocurrir si se sale de la app y el Widget no está montado, lanzando una exepción.
 
 # Notas
 - En ThemeData se puede configurar el estilo de todos los AppBars por medio de appBarTheme.
@@ -846,3 +946,6 @@ class _UiControlsViewState extends State<_UiControlsView> {
 import 'dart:math' show Random;
 ```
 - Se quita física de rebote en ListView con pysics, const ClampingScrollPhysics().
+- Se recomienda reiniciar la aplicación por completo al cargar assets como imágenes.
+- Tener cuidado al invocar setState en un listener, ya que el sitener ejecuta la función varias veces debido al frame de actualización que presenta flutter.
+  - Es buena práctica mandar dispose de un controlador cada que se usa un listener.
