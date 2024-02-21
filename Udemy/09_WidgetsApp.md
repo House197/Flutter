@@ -509,6 +509,313 @@ class _CardType4 extends StatelessWidget {
 - Listas
 - Pageviews
 
+## Progress Indicators
+### CircularProgressIndicator
+- Ya viene configurado, en donde se puede cambiar tanto el strokeWidth, backgroundColor.
+
+### ControlledProgressIndicators
+- Se puede controlar un Indicator al especificar su campo value.
+- A modo de prueba, se envuelve todo con StreamBuilder para poder ir cambiando ese value.
+
+#### StreamBuilder
+- Se va ir construyendo en tiempo de ejecución.
+- La primera emisión da un valor nulo.
+- Se especifica una condición para que el Stream deje de emitir valores con takeWhile().
+- No tiene el campo de child, pero sí de builder.
+- Flutter automáticamente realizar el dispose del StreamBuilder cuando el widget se destruye.
+
+#### Circular ControlledProgressIndicator
+
+#### Linear ControlledProgressIndicator
+- Neceista saber el espacio para poder renderizar la línea.
+- Al envolver este elemento en un Row no hay un límite de ancho.
+- Se debe usar Exapanded para que tome todo el espacio que el padre da en el eje principal.
+
+``` dart
+  }
+}
+
+class _ControlledProgressIndicator extends StatelessWidget {
+  const _ControlledProgressIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+        stream: Stream.periodic(const Duration(milliseconds: 300), (value) {
+          return (value * 2) / 100;
+        }).takeWhile((value) => v<alue < 100),
+        builder: (context, snapshot) {
+          final progressValue = snapshot.data ?? 0;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: progressValue,
+                  strokeWidth: 2,
+                  backgroundColor: Colors.black12,
+                ),
+                const SizedBox(
+                  width: 20,
+                ),
+                Expanded(
+                    child: LinearProgressIndicator(
+                  value: progressValue,
+                ))
+              ],
+            ),
+          );
+        });
+  }
+}
+```
+
+## Snackbars
+- Se crea con onPressed de FloatingButton de Scaffold.
+- Se puede crear de dos maneras:
+    - Se usa key para diferenciar el Scaffold.
+    - Indicarle a Flutter que encuentre el Scaffold más cercano para construirlo (ScaffoldMessenger).
+
+### ScaffoldMessenger
+- Con ScaffoldMessenger.of(context).clearSnackBars(); se limpian los Snackbars anteriores para evitar mostrar varios si el usuario dio varias veces click a su invocación.
+- Se puede agregar una action al snackbar, la cual sin importa qué va a hacer que se cierre el snackbar.
+- Se puede definir el tiempo que el Snackbar va a estar presente.
+
+``` dart
+import 'package:flutter/material.dart';
+
+class SnackbarScreen extends StatelessWidget {
+  static const name = 'snackbar_screen';
+
+  const SnackbarScreen({super.key});
+
+  void showCustomSnackbar(BuildContext context) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    final snackbar = SnackBar(
+      content: const Text('Hola Mundo'),
+      action: SnackBarAction(label: 'Ok!', onPressed: () {}),
+      duration: const Duration(seconds: 2),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Snackbars y Diálogos'),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showCustomSnackbar(context),
+        label: const Text('Mostrar Snackbar'),
+        icon: const Icon(Icons.remove_red_eye_outlined),
+      ),
+    );
+  }
+}
+
+```
+
+## Diálogos y licencias
+### Mostrar licencias
+- Flutter da showAboutDialog, el cual abre una popup que contiene un botón que despliega las licencias usadas.
+- El título del diálogo se puede cambiar desde él mismo o que tome el tpitutlo de Material App.
+- El contenido del diálogo se coloca por medio del campo children.
+
+``` dart
+  void showCustomSnackbar(BuildContext context) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    final snackbar = SnackBar(
+      content: const Text('Hola Mundo'),
+      action: SnackBarAction(label: 'Ok!', onPressed: () {}),
+      duration: const Duration(seconds: 2),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+  }
+
+
+       floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showCustomSnackbar(context),
+        label: const Text('Mostrar Snackbar'),
+        icon: const Icon(Icons.remove_red_eye_outlined),
+      ),
+```
+
+### Diálogo personalizado (AlertDialog)
+- Se usa showDialog, el cual contiene el campo de builder.
+- Del campo de builder se retorna AlertDialog.
+    - Tiene los campos de title, content y actions.
+    - Se puede cerrar usando context.pop(), lo  cual es posible a go_router. De lo contrario se tendría que usar Navigator.of
+    - Para evitar que se cierra haciendo click fuera de él se coloca barrierDismissable en false en showDialog.
+
+``` dart
+  void openDialog(BuildContext context) {
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (context) => AlertDialog(
+              title: const Text('Estas seguro?'),
+              content: const Text(
+                  'sdsfdsffa ff gd fgsdh hv  lk osaf dsf aosdf osalf'),
+              actions: [
+                TextButton(
+                    onPressed: () => context.pop(),
+                    child: const Text('Cancelar')),
+                FilledButton(
+                    onPressed: () => context.pop(),
+                    child: const Text('Aceptar'))
+              ],
+            ));
+  }
+
+              FilledButton.tonal(
+              onPressed: () => openDialog(context),
+              child: const Text('Mostrar diálogo'),
+            )
+```
+
+## Animated Container
+- Es un contenedor que cuando detecta un cambio en su propiedad anima ese cambio.
+
+``` dart
+AnimatedContainer(
+          duration: const Duration(milliseconds: 400),
+          width: 200,
+          height: 230,
+          decoration: BoxDecoration(
+              color: Colors.red, borderRadius: BorderRadius.circular(30)),
+        ),
+```
+
+## Checkbox, Radios y otros Tiles
+### SwitchListTile
+``` dart
+class _UiControlsView extends StatefulWidget {
+  const _UiControlsView();
+
+  @override
+  State<_UiControlsView> createState() => _UiControlsViewState();
+}
+
+enum Transportation { car, plane, boat, submarine }
+
+class _UiControlsViewState extends State<_UiControlsView> {
+  bool isDeveloper = true;
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const ClampingScrollPhysics(),
+      children: [
+        SwitchListTile(
+          title: const Text('Developer Mode'),
+          subtitle: const Text('Controles adicionales'),
+          value: isDeveloper,
+          onChanged: (value) => setState(() {
+            isDeveloper = value;
+          }),
+        )
+      ],
+    );
+  }
+}
+ 
+```
+
+### RadioListTile
+- Solo permite seleccionar una opción.
+- Se crea una enum para determinar los valores permitidos para el Radio.
+``` dart
+enum Transportation { car, plane, boat, submarine }
+
+class _UiControlsView extends StatefulWidget {
+  const _UiControlsView();
+
+  @override
+  State<_UiControlsView> createState() => _UiControlsViewState();
+}
+
+class _UiControlsViewState extends State<_UiControlsView> {
+  bool isDeveloper = true;
+  Transportation selectedTransportation = Transportation.car;
+```
+- Sus campos son:
+    - El value ayuda a enlazar el valor seleccionado con el valor actual.
+    - groupValue es la variable que se usa para marcar cuál es la opción seleccionada.
+    - onChange permite gestionar la acción. 
+
+``` dart
+    return ListView(
+      physics: const ClampingScrollPhysics(),
+      children: [
+        RadioListTile(
+          title: const Text('By Car'),
+          subtitle: const Text('Viajar por carro'),
+          value: Transportation.car,
+          groupValue: selectedTransportation,
+          onChanged: (value) => setState(() {
+            selectedTransportation = Transportation.car;
+          }),
+        ),
+        RadioListTile(
+          title: const Text('By Boat'),
+          subtitle: const Text('Viajar por barco'),
+          value: Transportation.boat,
+          groupValue: selectedTransportation,
+          onChanged: (value) => setState(() {
+            selectedTransportation = Transportation.boat;
+          }),
+        ),
+        RadioListTile(
+          title: const Text('By plane'),
+          subtitle: const Text('Viajar por avión'),
+          value: Transportation.plane,
+          groupValue: selectedTransportation,
+          onChanged: (value) => setState(() {
+            selectedTransportation = Transportation.plane;
+          }),
+        ),
+```
+
+## ExpansionTile
+- Permite envolver elementos para compactarlos en la ui, en donde por medio de un botón se despliegan.
+
+## CheckboxTile
+- Es una opción independiente basada en un valor booleano.
+- En un Stateful Widget se definen las opciones
+
+``` dart
+  bool wantsBreakfast = false;
+  bool wantsLunch = false;
+  bool wantsDinner = false;
+
+         CheckboxListTile(
+          title: const Text('Desayuno?'),
+          value: wantsBreakfast,
+          onChanged: ((value) => setState(() {
+                wantsBreakfast = !wantsBreakfast;
+              })),
+        ),
+        CheckboxListTile(
+          title: const Text('Almuerzo?'),
+          value: wantsLunch,
+          onChanged: ((value) => setState(() {
+                wantsLunch = !wantsLunch;
+              })),
+        ),
+        CheckboxListTile(
+          title: const Text('Cena?'),
+          value: wantsDinner,
+          onChanged: ((value) => setState(() {
+                wantsDinner = !wantsDinner;
+              })),
+        ),
+```
+
 # Notas
 - En ThemeData se puede configurar el estilo de todos los AppBars por medio de appBarTheme.
 - Los botones se deshabilitan colocando null en onPressed.
@@ -531,3 +838,8 @@ class _CardType4 extends StatelessWidget {
   - El último elemento parace que le falta espacio entre él mismo y el bottom de la app, por lo que se recomienda poner un Sized Box con altura al final de la lista de widgets.
 - Con Stack el primer elemento en children es el que está más al fondo de la app, mientras que los que le siguen van acercandose al usuario.
 - En Image.Network se puede usa fit para indicarle a la imagen cómo ocupar el epsacio disponible, en donde se puede pasr BoxFit.cover.
+- Se importa algo específico de una librería con show:
+``` dart
+import 'dart:math' show Random;
+```
+- Se quita física de rebote en ListView con pysics, const ClampingScrollPhysics().
