@@ -919,6 +919,481 @@ class _InfiniteScrollScreenState extends State<InfiniteScrollScreen> {
   - Se debe verificar que el Widget esté montado antes de mandar el setState.
     - Esto puede ocurrir si se sale de la app y el Widget no está montado, lanzando una exepción.
 
+``` dart
+class _InfiniteScrollScreenState extends State<InfiniteScrollScreen> {
+  List<int> imagesIds = [1, 2, 3, 4, 5];
+  final ScrollController scrollController = ScrollController();
+  bool isLoading = false;
+  bool isMounted = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    scrollController.addListener(() {
+      //scrollController.position.pixels
+      if ((scrollController.position.pixels + 500) >=
+          scrollController.position.maxScrollExtent) {
+        loadNextPage();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    isMounted = false;
+    super.dispose();
+  }
+
+  Future loadNextPage() async {
+    if (isLoading) return;
+    isLoading = true;
+    setState(() {});
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    addFiveImages();
+    isLoading = false;
+
+    if (!isMounted) return;
+
+    setState(() {});
+  }
+
+  void addFiveImages() {
+    final lastId = imagesIds.last;
+    imagesIds.addAll([1, 2, 3, 4, 5].map((e) => lastId + e));
+  }
+```
+
+### Refresh Indicator
+- Se envuevle el ListView con RefreshIndicator.
+- El campo onRefresh se llama cuando se realiza el trabajo.
+- También se puede personalizar su posición por medio de edgeOffset.
+    - También se tiene strokeWidth.
+
+``` dart
+ Future<void> onRefresh() async {
+    isLoading = true;
+    setState(() {});
+    await Future.delayed(const Duration(seconds: 3));
+    if (!isMounted) return;
+    isLoading = false;
+    final lastId = imagesIds.last;
+    imagesIds.clear();
+    imagesIds.add(lastId + 1);
+    addFiveImages();
+
+    if (!isMounted) return;
+    setState(() {});
+  }
+
+  RefreshIndicator(
+          strokeWidth: 2,
+          edgeOffset: 10,
+          onRefresh: onRefresh,
+          child: ListView.builder(
+              controller: scrollController,
+              itemCount: imagesIds.length,
+              itemBuilder: (context, index) {
+                return FadeInImage(
+```
+
+### Mover Scroll de forma automática
+``` dart
+  void moveScrollToBottom() {
+    if (scrollController.position.pixels + 150 <=
+        scrollController.position.maxScrollExtent) return;
+    scrollController.animateTo(scrollController.position.pixels + 150,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.fastOutSlowIn);
+  }
+
+// Se llama en la siguiente función
+
+  Future loadNextPage() async {
+    if (isLoading) return;
+    isLoading = true;
+    setState(() {});
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    addFiveImages();
+    isLoading = false;
+
+    if (!isMounted) return;
+
+    setState(() {});
+
+    moveScrollToBottom();
+  }
+```
+
+# Sección 11. Riverpod - Menú y Temas
+## Temas
+- Drawers (menús laterales).
+- Gestor de estado Riverpod.
+
+## Navigation Drawer
+- Se coloca en el campo drawer dado por Scaffold.
+- Se le pasa NavigationDrawer.
+- Ya que no es una pantalla entera, y solo se va a crear un menú se coloca su diseño en presentation -> widgets -> side_menu.dart.
+    - Va a ser Stateful ya que se necesita saber la opción seleccionada.
+- Se van a usar los elementos del archivo menu_items.dart
+    - A modo de prueba se colocan dos elementos en children de NavigationDrawer por medio de los Widget NavigationDrawerDestination.
+- Así como con el navegador que se puede tener en el bottom de la app, la opción seleccionada se da por un index, el cual se puede asignar por medio del campo onDestinationSelected y el campo selectedIndex.
+
+### Consideraciones de Notch y opciones del menú
+- Algunos elementos tienen el Notch, lo cual Flutter con NavigationDrawer ya se encarga de renderizar los elementos de tal forma que no choquen.
+    - Sin embargo, el diseño puede verse bien para algunas plataformas pero para otras no.
+- Se determina si el dispositivo tiene notch por medio de:
+
+``` dart
+final hastNotch = MediaQuery.of(context).viewPadding.top > 35;
+```
+
+- Ayuda a determinar el Padding en una dirección.
+- A partir de esto se puede determinar el valor para dar a algunos widgets.
+
+``` dart
+class _SideMenuState extends State<SideMenu> {
+  int selectedIndex = 0;
+  @override
+  Widget build(BuildContext context) {
+    final hastNotch = MediaQuery.of(context).viewPadding.top > 35;
+
+    return NavigationDrawer(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (selected) {
+          selectedIndex = selected;
+          setState(() {});
+        },
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(28, hastNotch ? 10 : 20, 16, 20),
+            child: const Text('Menu'),
+          ),
+          NavigationDrawerDestination(
+            icon: Icon(Icons.add),
+            label: const Text('Home Screen'),
+          ),
+```
+
+- Se construyen los elementos de menú con la variable de appItemsMenu, en donde se usa sublist para tomar una porción de los elementos a modo de poder añadir más estilo al menú.
+    - Se tiene el Widget Divider para colocar una línea horizontal.
+
+``` dart
+         Padding(
+            padding: EdgeInsets.fromLTRB(28, hastNotch ? 10 : 20, 16, 20),
+            child: const Text('Menu'),
+          ),
+          ...appMenuItems.sublist(0, 3).map(
+                (item) => NavigationDrawerDestination(
+                  icon: Icon(item.icon),
+                  label: Text(item.title),
+                ),
+              ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(28, 16, 28, 10),
+            child: Divider(),
+          ),
+```
+
+### Navegar desde el menú
+- Por medio del campo onDestinationSelected de NavigationDrawer se toma el menu item por medio del value dado por el callback.
+    - De esta forma, se ocupa context.push(menuItem.link)
+- Por otro lado, al regresar de la página que se navegó se aprecia que el menú sigue abierto.
+    - Se va a cerrar por medio de tener una referencia del Scaffold que tiene al drawer, siendo el que están en HomeScreen.
+    - La referencia se obtiene por el campo de key que presenta Scaffold.
+
+``` dart
+  @override
+  Widget build(BuildContext context) {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+    return Scaffold(
+      key: scaffoldKey,
+      appBar: AppBar(
+        title: const Text('Flutter + Material 3'),
+      ),
+      body: const _HomeView(),
+      drawer: const SideMenu(),
+    );
+  }
+}
+```
+
+- Este scaffoldKey tiene la referencia al estado actual del Scaffold. (Si tiene drawers, menú lateral al inicio o al final.)
+    - Se puede tener un service locators y gestor de estado, pero como está ligado directamente a ese SideMenu está bien colocarlo ahí.
+- En SideMenu se hace referencia por medio de pasarlo en el parámetro.
+
+``` dart
+class SideMenu extends StatefulWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  const SideMenu({super.key, required this.scaffoldKey});
+
+  @override
+  State<SideMenu> createState() => _SideMenuState();
+}
+
+```
+
+- Esta propiedad se va a usar en onDestinationSelected.
+    - Se realiza un null operator para revisar que no sea null y se aplica su método closeDrawer().
+
+``` dart
+    return NavigationDrawer(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (selected) {
+          selectedIndex = selected;
+          final menuItem = appMenuItems[selected];
+          setState(() {});
+          context.push(menuItem.link);
+          widget.scaffoldKey.currentState?.closeDrawer();
+        },
+```
+
+- Falta tener un gestor de estado para saber cuál fue la última opción seleccionada del menú.
+
+## Preparación de pantalla para Riverpod
+- presentation -> screens -> counter -> counter_screen.dart
+
+## Riverpod
+### Nota de actualización
+Riverpod annotations y generador de código
+Como varios sabrán, Riverpod no hace mucho lanzó una nueva sintaxis, (No marca como obsoleta la anterior sintaxis) significa que ahora tenemos dos formas de usarlo.
+
+La nueva versión utiliza decoradores y anotaciones que ayudan al generador de código para crear el provider ideal para lo que queremos hacer.
+
+Tiene pro y contras esta nueva versión de código:
+
+Pros:
+
+Es la forma recomendada por Riverpod
+
+Sintaxis mucho más simple
+
+Determina automáticamente el provider acorde a la necesidad
+
+Cons:
+
+Hay que mantener un watch o ejecutar el generador en cada cambio que hagamos en los providers
+
+flutter pub run build_runner watch
+
+Un paquete adicional de riverpod_generator como dependencia de desarrollo (que realmente no es gran problema)
+
+Pueden ver los ejercicios de una u otra sintaxis con el switch que colocaron en el sitio web de Riverpod
+
+### Introducción
+- Riverpod no depende de context.
+- Flutter_riverpod es la implementación de riverpod para Flutter.
+
+1. Se insatala con pub assist y escribiendo flutter_riverpod.
+2. Se envuelve a MyApp en main.dart con el Widget ProviderScope, el cual va a mantener una referencia a todos los providers que se utilicen.
+
+``` dart
+void main() => runApp(
+      const ProviderScope(child: MyApp()),
+);
+
+```
+
+3. Se crea presentation -> providers -> counter_provider.dart
+    - StateProvider es un proveedor de un estado.
+    - Es una pequeña pieza de información del aplicación
+
+``` dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final counterProvider = StateProvider((ref) => 5);
+
+```
+
+4. Se utiliza provider en counter_screen.dart
+    - Forma 1. Envolver el Widget con un Consumer, el cual es un builder.
+        - En lugar de heredear de un StatelessWidget se se hereda de un ConsumerWidget.
+            - Funciona igual que un StatelessWidget con algunas adiciones para el uso del provider.
+        - ConsumerWidget ofrece la referencia en el build method.
+            - Esto es como indicarle a Riverpod que se va a ocupar la referencia a algún provider.
+            - El provider se especifica en el método watch de ref.
+
+``` dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:widgets_app/presentation/providers/counter_provider.dart';
+
+class CounterScreen extends ConsumerWidget {
+  static const name = 'counter_screen';
+  const CounterScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final titleStyle = Theme.of(context).textTheme.titleLarge;
+    final clickCounter = ref.watch(counterProvider);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Counter Screen')),
+      body: Center(
+        child: Text(
+          'Valor: $clickCounter',
+          style: titleStyle,
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+```
+
+- Con watch se están al pendiente de los cambios del proveedr de información.
+    - Cuando CounterProvider cambia (el proveedor de información), entonces se determina lo que se debe redibujar.
+    - Si algo no cambia, entonces usa lo que tiene en memoria.
+        - Si determinadas sección del Widget no cambian, entonces se ocupa lo que está en memoria y solo redibuja lo que tuvo cambio.
+
+### Cambiar valores y modificadores
+- Forma 1. Usar ref.read para leer provedores desde métodos.
+    - Se debe usar el método notifier del provider.
+        - Si no se usa notifier entonces apunta al valor, pero la usar notifier se tiene acceso al state.
+    - Se usa el método state de read.
+    - Con lo anterior ya se puede modificar el valor del provider.
+``` dart
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          ref.read(counterProvider.notifier).state++;
+        },
+        child: const Icon(Icons.add),
+      ),
+```
+- Forma 2. Esta forma es conveniente para cuando se necesita el estado o algo en general.
+
+``` dart
+     floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          //ref.read(counterProvider.notifier).state++;
+          ref.read(counterProvider.notifier).update((state) => state + 1);
+        },
+        child: const Icon(Icons.add),
+      ),
+```
+
+### Provider de theme
+1. presentation -> providers -> theme_provider.dart
+
+### Pantalla para cambiar colores
+1. La lista de colores constante que se definió en app_theme.dart
+    - En el proveedor de Theme se coloca uno inmutable.
+    - Se hace usando Provider y retornando la lista de colores de app_theme.dart.
+
+``` dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:widgets_app/config/theme/app_theme.dart';
+
+final isDarkModeProvider = StateProvider((ref) => false);
+
+final colorListProvider = Provider((ref) => colorList);
+
+```
+
+2. Jalar provider en theme_changer_screen.dart
+    - Se usa ref.watch, ya que este método sabe cuándo cambia y cuándo no.
+    - Se podría pensar en usar read ya que se sabe que ese valor nunca va a cambiar, pero watch es capaz de saber eso.
+
+#### RadioListTile
+- Se usa para mostrar las opciones de colores disponibles.
+- Se usa un provider para mantener registro del indice seleccionado.
+    - Se coloca el mismo color al radio button por medio del campo activeColor.
+    - groupValue muestra el valor seleccionado, en donde se marca el radio button.
+    - El campo de Value se el valor que se le asigna a cada Radio, el cual se toma del ListView.
+
+``` dart
+class _ThemeChangerView extends ConsumerWidget {
+  const _ThemeChangerView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedColor = ref.watch(selectedColorProvider);
+    final List<Color> colors = ref.watch(colorListProvider);
+    return ListView.builder(
+        itemCount: colors.length,
+        itemBuilder: (context, index) {
+          final color = colors[index];
+          return RadioListTile(
+              title: Text(
+                'Este color',
+                style: TextStyle(color: color),
+              ),
+              subtitle: Text('${color.value}'),
+              activeColor: color,
+              value: index,
+              groupValue: selectedColor,
+              onChanged: (value) {
+                ref
+                    .read(selectedColorProvider.notifier)
+                    .update((state) => value!);
+              });
+        });
+  }
+}
+```
+
+### Indice del color seleccionado
+- En theme_provider se define el provider para el color seleccionado, el cual se usará en Theme_changer_screen.
+
+### App Theme
+- Recibe como argumento isDarkMode para poder usarlo en el brightness de ThemeData.
+
+``` dart
+class AppTheme {
+  final int selectedColor;
+  final bool isDarkMode;
+
+  AppTheme({
+    this.selectedColor = 0,
+    this.isDarkMode = false,
+  }) : assert(selectedColor >= 0 && selectedColor < colorList.length,
+            'selectedColor must be positive and less or equal than ${colorList.length}');
+
+  ThemeData getTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      colorSchemeSeed: colorList[selectedColor],
+      appBarTheme: const AppBarTheme(centerTitle: false),
+    );
+  }
+}
+```
+
+- Se recibe desde main.dart, por lo que se debe hacer ConsumerWidget para poder leer el valor y pasarlo a AppTheme.
+
+``` dart
+
+void main() => runApp(
+      const ProviderScope(child: MyApp()),
+    );
+
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDarkMode = ref.watch(isDarkModeProvider);
+    final selectedColor = ref.watch(selectedColorProvider);
+    return MaterialApp.router(
+      title: 'Flutter Widgets',
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme(selectedColor: selectedColor, isDarkMode: isDarkMode)
+          .getTheme(),
+    );
+  }
+```
+
+## Riverpod StateNotifier
+
 # Notas
 - En ThemeData se puede configurar el estilo de todos los AppBars por medio de appBarTheme.
 - Los botones se deshabilitan colocando null en onPressed.
@@ -949,3 +1424,5 @@ import 'dart:math' show Random;
 - Se recomienda reiniciar la aplicación por completo al cargar assets como imágenes.
 - Tener cuidado al invocar setState en un listener, ya que el sitener ejecuta la función varias veces debido al frame de actualización que presenta flutter.
   - Es buena práctica mandar dispose de un controlador cada que se usa un listener.
+- No usar métodos como watch dados por Riverpod en métodos como onPressed.
+    - Se debe usar read.
