@@ -1393,6 +1393,14 @@ class MyApp extends ConsumerWidget {
 ```
 
 ## Riverpod StateNotifier
+- Se quiere estar pendiente de la clase de AppTheme.
+- En theme_provider.dart se va a crear un objeto personzalizadp de tipo AppTheme.
+    - Se usa StateNotifierProvider.
+    - Se recuerda que Provider es para valores inmutables, StateProvider es para mantener alguna pieza de estado,
+    y StateNotifierProvider es para mantener un estado de forma más elaborada.
+    - Se aprecia al dejar el cursor sobre la clase que StateNotifierProvider<Null, Object?>
+        - El primer elemento es el nombre de la clase que se desea contorle el estado.
+        - El segundo es el estado que se va a tener.
 
 # Notas
 - En ThemeData se puede configurar el estilo de todos los AppBars por medio de appBarTheme.
