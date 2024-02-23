@@ -8,4 +8,14 @@ final colorListProvider = Provider((ref) => colorList);
 
 final selectedColorProvider = StateProvider((ref) => 0);
 
-final themeNotifierProvider = StateNotifierProvider((ref) => null);
+// Un ojbeto de tipo AppTheme (custom)
+final themeNotifierProvider = StateNotifierProvider<ThemeNotifier, AppTheme>(
+  (ref) => ThemeNotifier(),
+);
+
+// Controller o Notifier
+class ThemeNotifier extends StateNotifier<AppTheme> {
+  // Se le pide cree la primera instancia de AppTheme.
+  // STATE = new AppTheme
+  ThemeNotifier() : super(AppTheme());
+}

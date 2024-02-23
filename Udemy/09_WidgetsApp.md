@@ -1400,7 +1400,55 @@ class MyApp extends ConsumerWidget {
     y StateNotifierProvider es para mantener un estado de forma más elaborada.
     - Se aprecia al dejar el cursor sobre la clase que StateNotifierProvider<Null, Object?>
         - El primer elemento es el nombre de la clase que se desea contorle el estado.
+          - En este caso es ThemeNotifier.
         - El segundo es el estado que se va a tener.
+          - En este caso es AppTheme.
+        - En otras palabras, el que controla es ThemeNotifier, y el esado es de tipo una instancia de AppTheme.
+        - Lo que retorna es una instancia de ThemeNotifier.
+- Se crea la clase para controlar el tema.
+    - El nombre puede variar entre Controller o Notifier.
+- StateNotifier se encarga de mantener un estado en particular, el cual es una instancia de AppTheme.
+
+``` dart
+// Un ojbeto de tipo AppTheme (custom)
+final themeNotifierProvider = StateNotifierProvider<ThemeNotifier, AppTheme>(
+  (ref) => ThemeNotifier(),
+);
+
+// Controller o Notifier
+class ThemeNotifier extends StateNotifier<AppTheme> {
+  // Se le pide cree la primera instancia de AppTheme.
+  // STATE = new AppTheme
+  ThemeNotifier() : super(AppTheme());
+}
+```
+
+- Al crear métodos en ThemeNotifier se va a tener acceso a state, el cual es de tipo AppTheme en este caso.
+
+### Ajuste en main.dart
+- En lugar de tener las dos variabbles de isDarkMode y selectedColor que vienen desde el provider correspondiente, se va a estar escuchando a themeNotifierProvider.
+- Luego, en theme de MaterialApp se quita la instancia de AppTheme y se coloca la variable que se le asignó ref.watch(themeNotifierProvider).
+
+### Implementaciones de métodos para cambiar el theme
+#### toggleDarkmode
+- Si se intenta cambiar la propiedad isDarkMode de la clase directamente no es posible, ya que esta propiedad está inicializada como final en AppTheme.
+- Se crea un nuevo método en AppTheme que va a regresar una instancia de AppTheme.
+- El método se llama copyWith.
+  - El patrón de copyWith es una forma de hacer una copia del tema actual.
+  - Es un método para 'copiar' la instancia de la clase.
+    - Eso es algo que fluye por toda la aplicación de Flutter. Es decir, existe por todo lado en Flutter. Por ejemplo:
+    ``` dart
+    ThemeData.dark().copyWith()
+    ```
+    - En este caso se hace una copia de dark y se expanden ciertas funcionalidades.
+- Se le va a pasar lo mismo que pide la instancia de AppTheme.
+  - selectedColor se hace opcional, por lo que si no se pasa entonces se queda con el valor definido en la clase.
+  - Lo mismo para isDarkMode.
+- De esta forma se puede tener final en AppTheme para tener estados inmutales y cuando cambia algo en el estado, se va a crear un nuevo estado, el cual está basado en el anterior.
+### Resumen
+- StateNotifierProvider permite mantener un estado un poco más complejo.
+  - Este estado en este caso es administrado por ThemeNotifier.
+  - El State es de tipo AppTheme.
 
 # Notas
 - En ThemeData se puede configurar el estilo de todos los AppBars por medio de appBarTheme.
