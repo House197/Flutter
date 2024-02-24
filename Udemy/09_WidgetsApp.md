@@ -1444,7 +1444,135 @@ class ThemeNotifier extends StateNotifier<AppTheme> {
 - Se le va a pasar lo mismo que pide la instancia de AppTheme.
   - selectedColor se hace opcional, por lo que si no se pasa entonces se queda con el valor definido en la clase.
   - Lo mismo para isDarkMode.
-- De esta forma se puede tener final en AppTheme para tener estados inmutales y cuando cambia algo en el estado, se va a crear un nuevo estado, el cual está basado en el anterior.
+- De esta forma se puede tener final en AppTheme para tener estados inmutables y cuando cambia algo en el estado, se va a crear un nuevo estado, el cual está basado en el anterior.
+  - En app_theme se tiene
+
+```dart
+class AppTheme {
+  final int selectedColor;
+  final bool isDarkMode;
+
+  AppTheme({
+    this.selectedColor = 0,
+    this.isDarkMode = false,
+  }) : assert(selectedColor >= 0 && selectedColor < colorList.length,
+            'selectedColor must be positive and less or equal than ${colorList.length}');
+
+  ThemeData getTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      colorSchemeSeed: colorList[selectedColor],
+      appBarTheme: const AppBarTheme(centerTitle: false),
+    );
+  }
+
+  AppTheme copyWith({int? selectedColor, bool? isDarkMode}) => AppTheme(
+      selectedColor: selectedColor ?? this.selectedColor,
+      isDarkMode: isDarkMode ?? this.isDarkMode);
+}
+
+```
+
+- Luego, en el theme_privder, en el método creado para hace toggle al theme se usa el método copyWith.
+  - El estado nuevo va a ser una copia del estado actual con los campos deseados modificados.
+- Riverpod se va a encargar de hacer la notificación a todos los widgets en donde sea necesario. Así, Riverpod se encarga del proceso de notificación.
+- Finalmente, en theme_changer_screen (en la sección en dondef se modifica el theme), ahora se está pendiente del campo isDarkMode de themeNotifierProvider.
+  - Por otro lado, el método de update se interesa por los métodos del notifier, no la instancia. Por esa razón se usa notifier.
+    - El método notifier es una sugar syntax para indicarle a riverpod que automáticamente cree el 'Notifier'. es decir, al controlador de la variable que va a cambiar. Cuando se usó Provider o StateProvider implícitamente se le dice a Riverpod que se cree el manejador de estado. Cuando se usa StateNotifierProvider se tiene que crear el 'notifier' de forma manual.
+
+``` dart
+  Widget build(BuildContext context, WidgetRef ref) {
+    //final isDarkMode = ref.watch(isDarkModeProvider);
+    final isDarkMode = ref.watch(themeNotifierProvider).isDarkMode;
+
+    onPressed: () {
+                //ref.read(isDarkModeProvider.notifier).update((state) => !state);
+                ref.read(themeNotifierProvider.notifier).toggleDarkMode();
+              },
+```  
+
+- Lo mismo se hace para poder cambiar el color de la aplicación.
+  - Se crea el método de themeNotifier para crear copia del estado y cambiar el atributo.
+  - Se lee el valor del atributo de la instancia en el Widget deseado.
+  - Se usa el notifier para llegar a la clase notifier y poder usar el método para cambiar el color.
+    - Esto se hace en el archivo que se va a encargar de ajustar el tema.
+
+``` dart
+class AppTheme {
+  final int selectedColor;
+  final bool isDarkMode;
+
+  AppTheme({
+    this.selectedColor = 0,
+    this.isDarkMode = false,
+  }) : assert(selectedColor >= 0 && selectedColor < colorList.length,
+            'selectedColor must be positive and less or equal than ${colorList.length}');
+
+  ThemeData getTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      colorSchemeSeed: colorList[selectedColor],
+      appBarTheme: const AppBarTheme(centerTitle: false),
+    );
+  }
+
+  AppTheme copyWith({int? selectedColor, bool? isDarkMode}) => AppTheme(
+      selectedColor: selectedColor ?? this.selectedColor,
+      isDarkMode: isDarkMode ?? this.isDarkMode);
+}
+```
+
+``` dart
+  Widget build(BuildContext context, WidgetRef ref) {
+    //final selectedColor = ref.watch(selectedColorProvider);
+    final List<Color> colors = ref.watch(colorListProvider);
+    final selectedColor = ref.watch(themeNotifierProvider).selectedColor;
+
+                  onChanged: (value) {
+                //ref
+                //   .read(selectedColorProvider.notifier)
+                // .update((state) => value!);
+                ref
+                    .read(themeNotifierProvider.notifier)
+                    .changeColorIndex(value!);
+              });
+```
+
+``` dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:widgets_app/config/theme/app_theme.dart';
+
+final isDarkModeProvider = StateProvider((ref) => false);
+
+// valores inmutables
+final colorListProvider = Provider((ref) => colorList);
+
+final selectedColorProvider = StateProvider((ref) => 0);
+
+// Un ojbeto de tipo AppTheme (custom)
+final themeNotifierProvider = StateNotifierProvider<ThemeNotifier, AppTheme>(
+  (ref) => ThemeNotifier(),
+);
+
+// Controller o Notifier
+class ThemeNotifier extends StateNotifier<AppTheme> {
+  // Se le pide cree la primera instancia de AppTheme.
+  // STATE = new AppTheme
+  ThemeNotifier() : super(AppTheme());
+
+  void toggleDarkMode() {
+    // El nuevo estado es una copia del estado actual, pero se ajusta el campo deseado.
+    state = state.copyWith(isDarkMode: !state.isDarkMode);
+  }
+
+  void changeColorIndex(int colorIndex) {
+    state = state.copyWith(selectedColor: colorIndex);
+  }
+}
+```
+
 ### Resumen
 - StateNotifierProvider permite mantener un estado un poco más complejo.
   - Este estado en este caso es administrado por ThemeNotifier.

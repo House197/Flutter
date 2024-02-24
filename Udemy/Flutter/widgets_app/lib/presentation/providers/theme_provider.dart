@@ -18,4 +18,13 @@ class ThemeNotifier extends StateNotifier<AppTheme> {
   // Se le pide cree la primera instancia de AppTheme.
   // STATE = new AppTheme
   ThemeNotifier() : super(AppTheme());
+
+  void toggleDarkMode() {
+    // El nuevo estado es una copia del estado actual, pero se ajusta el campo deseado.
+    state = state.copyWith(isDarkMode: !state.isDarkMode);
+  }
+
+  void changeColorIndex(int colorIndex) {
+    state = state.copyWith(selectedColor: colorIndex);
+  }
 }
