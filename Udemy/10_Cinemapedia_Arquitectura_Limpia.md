@@ -389,12 +389,12 @@ final movieRepositoryProvider = Provider((ref) {
 - Se consulta a este provider para saber cuáles son las películas que están en el cine.
 - Se recuerda que StateNotifierProvider es un proveedor de un estado que notifica su cambio.
     - StateNotifier pide el tipo de estado que va a mantener, el cual sería un listado de Movie.
-        - Se debe intentar que sea lo más simple posible.
-    - Se crea la clase que controla o que sirve para notificar a StateNotifierProvider, y se provee del estado.
+        - Se debe intentar que sea lo más simple posible (el estado).
+    - Se crea la clase que controla o que sirve para notificar a StateNotifierProvider, y se provee del estado (MoviesNotifier).
 - La clase MoviesNotifier va a sevir para:  
     - Saber página actual.
-- MoviesNotifier va a ser genérico para que sirva para otros providers.
-    - Debe crearse un nuevo estado para notificar a StateNotifier que hubo un cambio.
+- MoviesNotifier va a ser general para que sirva para otros providers.
+    - Debe crearse un nuevo estado para notificar a StateNotifier que hubo un cambio en lugar de alterar directamente al estado (así como con React).
     - No se tiene a ref en la clase. Podría pasarse desde StateNotifierProvider, pero esto haría que esté ligado a ese proveedor.
     - MoviesNotifier solo necesita saber el "caso de uso" para traer las películas.
         - Se define un typedef para especificar el tipo de función que se espera.
@@ -428,7 +428,273 @@ class MoviesNotifier extends StateNotifier<List<Movie>> {
   }
 }
 ```
-### Notifier
+
+### Archivo de barril
+1. presentation -> providers -> providers.dart
+``` dart
+export 'movies/movies_providers.dart';
+export 'movies/movies_repository_provider.dart';
+```
+
+#### Resumen
+- La principal razón de hacer lo anterior así s separar la aplicación por capas para poder modificar fácilmente a los elementos.
+- El provider movies_provider tiene la función de mantener el estado de películas, los cuales pueden ser varios:
+  - Estado de películas en el cine.
+  - Estado de las que están por venir.
+  - Las que están favvoritas.
+  - etc.
+- Entonces, se crea una clase (MoviesNotifier) general para solo mantener el estado de las películas.
+  - Va a tener la función de cargar la siguiente página de películas y mantenerlas en memorial.
+- nowPlayingMoviesProvider (StateNotifierProvider)
+  - Su objetivo de este Provider es que sea manejado por medio de StateNotifierProvider, y acá se va a saber específicamente esas películas por medio de fetchMoreMovies, el cual se obtiene de la referencia del método getNowPlaying de movieRepositoryProvider.
+  - Los demás providers que se van a crear (Upcoming y demás), este mismo objeto con el mismo Notifier, solo va a cambiar el caso de uso para saber las películas que van a traer (el caso de uso se obtuvo con la referencia al método antes mencionado).
+
+## 8. Mostrar películas en pantalla
+- Se desea mandar a llamar al ciclo de vida para la carga de la primera página.
+1. Extraer widget en body de HomeScreen y nombrarlo como _HomeView.
+2. Convertir _HomeView en ConsumerSatefulWidget.
+3. Convertir State a ConsumerState.
+  - En ConsumerState ya se tiene acceso a ref.
+4. Colocar init section.
+  - En esta sección se desea mandar a llamar al provider para llegar a loadNextPage.
+  - Se usa el método read de ref.
+  - Acá solo se manda a llamar a la petición.
+5. Recuperar listado de películas con ref.watch en build function.
+
+# Sección 13. Containuación
+## Temas
+- Esta sección tiene por objetivo realizar 4 consultas a TheMovieDB para obtener:
+  - Películas populares
+  - Películas en cines
+  - Películas mejor calificadas
+  - Películas que próximamente estarán en cines
+- scroll horizontal infinito, slivers y más.
+
+## Custom AppBar
+1. presentation -> widgets -> shared -> custom_appbar.dart
+### Spacer
+- Widget que toma todo el espacio disponible de un FlexLayout.
+
+### SafeArea
+- Se puede evitar que tome espacio de más por medio de top, bottom, left y right, los cuales se les debe asignar false al que se desee.
+
+``` dart
+import 'package:flutter/material.dart';
+
+class CustomAppbar extends StatelessWidget {
+  const CustomAppbar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final titleStyle = Theme.of(context).textTheme.titleMedium;
+    return SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                Icon(Icons.movie_outlined, color: colors.primary),
+                const SizedBox(width: 5),
+                Text('Cinemapedia', style: titleStyle),
+                const Spacer(),
+                IconButton(onPressed: () {}, icon: const Icon(Icons.search))
+              ],
+            ),
+          ),
+        ));
+  }
+}
+```
+
+## 2. MoviSlideShow - Carrusel de películas
+1. Instalar paquete card_swiper.
+  - Al instlar paquetes se debe verificar que diga Dart 3 ready.
+2. presentation -> widgets -> movies -> movies_slideshow.dart
+3. Se define su altura con SizedBox.
+### Swiper
+- Funciona al igual que cualquier builder.
+- Campos especiales:
+  1. viewPortFraction: 0.4
+    - Permite hacer visible una parte de los elementos contiguos.
+  2. scale: 0.6
+      - Los elementos se reducen en tamaño a excepción del que está actualmente mostrándose.
+      - Presenta animación para colocar al elemento que va a estar mostrandose con una escala de 1.
+  3. autoplay: true.
+  4. Pagination.
+    - Swiper tiene el campo pagination, el cual espera el enum SwiperPagination o una personalización.
+
+``` dart
+class MoviesSlideshow extends StatelessWidget {
+  final List<Movie> movies;
+  const MoviesSlideshow({super.key, required this.movies});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return SizedBox(
+      height: 210,
+      width: double.infinity,
+      child: Swiper(
+        viewportFraction: 0.8,
+        autoplay: true,
+        scale: 0.8,
+        pagination: SwiperPagination(
+            margin: const EdgeInsets.only(top: 0),
+            builder: DotSwiperPaginationBuilder(
+              activeColor: colors.primary,
+              color: colors.secondary,
+            )),
+        itemCount: movies.length,
+        itemBuilder: (context, index) {
+          final movie = movies[index];
+          return _Slide(movie: movie);
+        },
+      ),
+    );
+  }
+}
+```
+
+### _Slider
+- Es el Widget que irá retornando Swiper.
+1. Colocar Padding con el propósito de que sea completamente visible el BoxShadow.
+2. Se define DecoratedBox.
+  1. Colocar estilo de decoration en una variable para facilitar mantenimiento.
+  2. Se define boxShadow, el cual es una lista.
+3. Se usa ClipRRect para tener border redondeado.
+4. Se usa Image.network y fint BoxFit.cover para colocar imagen.
+  - Usar loadingBuilder para saber si la imagen ya cargó o colocar algo mientras tanto.
+5. Instalar paquete animate_to
+  - Se usa para tener FadeIn al momento que la imagen se ha cargado.
+
+``` dart
+class _Slide extends StatelessWidget {
+  final Movie movie;
+  const _Slide({required this.movie});
+
+  @override
+  Widget build(BuildContext context) {
+    final decoration = BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black45,
+            blurRadius: 10,
+            offset: Offset(0, 10),
+          ),
+        ]);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 30.0),
+      child: DecoratedBox(
+        decoration: decoration,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.network(
+            movie.backdropPath,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress != null) {
+                return const DecoratedBox(
+                    decoration: BoxDecoration(color: Colors.black12));
+              }
+
+              return child;
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+## 3. Movies Slideshow Provider
+- No se puede usar un método como sublist al momento de pasar el argumento a MoviesSlideShow, ya que en un inicio el arreglo es 0.
+  - Se puede hacer una evaluación, sin embargo, por motivos educativos se crea un provider nuevo.
+1. presentation -> providers -> movies -> movies_slideshow_provider.dart
+2. Se crea un provider inmutable, ya que solo se desean leer las películas.
+  - Si después las película cambian entonces quien cambia es nowPlayingMovies, no este provider.
+
+``` dart
+import 'package:cinemapedia/domain/entities/movie.dart';
+import 'package:cinemapedia/presentation/providers/providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final moviesSlideshowProvider = Provider<List<Movie>>((ref) {
+  final nowPlayingMovies = ref.watch(nowPlayingMoviesProvider);
+  if (nowPlayingMovies.isEmpty) return [];
+  return nowPlayingMovies.sublist(0, 6);
+});
+
+```
+
+## 4. CustomBottomNavigationBar
+1. Dirigirse a Scaffold de HomeScreen.
+2. Usar bottomNavigationBard.
+3. presentation -> widgets -> shared -> custom_bottom_navigationbar.dart
+  - Se le coloca elevation 0 para evitar ese estilo.
+
+``` dart
+import 'package:flutter/material.dart';
+
+class CustomBottomNavigation extends StatelessWidget {
+  const CustomBottomNavigation({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      elevation: 0,
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home_max), label: 'Inicio'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.label_outline), label: 'Categorías'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_outline), label: 'Favoritos'),
+      ],
+    );
+  }
+}
+```
+
+``` dart
+class HomeScreen extends StatelessWidget {
+  static const name = 'home_screen';
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _HomeView(),
+      bottomNavigationBar: CustomBottomNavigation(),
+    );
+  }
+}
+```
+
+## 5. Movie Horizontal ListView
+1. presentation -> providers -> movies -> movies_horizontal_listview.dart
+
+### HumanFormats
+1. Descargar paquete intl.
+2. config -> helpers -> human_formats.dart
+
+``` dart
+import 'package:intl/intl.dart';
+
+class HumanFormats {
+  static String number(double number) {
+    final formatterNumber =
+        NumberFormat.compactCurrency(decimalDigits: 0, symbol: '', locale: 'en')
+            .format(number);
+    return formatterNumber;
+  }
+}
+
+```
 
 # Buenas prácticas
 - Las importaciones importan.
@@ -438,3 +704,4 @@ class MoviesNotifier extends StateNotifier<List<Movie>> {
     - Por último las de dependencias personales.
 - Un cambio en las variables de entorno no redibuja a los widgets.
 - Hcaer que el estado que gestiona StateNotifier sea lo más simple posible.
+- Se recomienda no usar alturas mayores a 210 px.
