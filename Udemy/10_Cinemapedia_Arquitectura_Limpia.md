@@ -300,7 +300,7 @@ import 'package:cinemapedia/infrastructure/mappers/movie_mapper.dart';
 import 'package:cinemapedia/infrastructure/models/moviedb/moviedb_response.dart';
 import 'package:dio/dio.dart';
 
-class MovieDbDatasource extends MovieDatasource {
+class MovieDbDatasource extends MoviesDatasource {
   final dio = Dio(BaseOptions(
       baseUrl: 'https://api.themoviedb.org/3',
       queryParameters: {
@@ -309,7 +309,8 @@ class MovieDbDatasource extends MovieDatasource {
       }));
   @override
   Future<List<Movie>> getNowPlaying({int page = 1}) async {
-    final response = await dio.get('/');
+    final response =
+        await dio.get('/movie/now_playing', queryParameters: {'page': page});
     final movieDBResponse = MovieDbResponse.fromJson(response.data);
 
     final List<Movie> movies = movieDBResponse.results
@@ -319,6 +320,7 @@ class MovieDbDatasource extends MovieDatasource {
     return movies;
   }
 }
+
 ```
 
 ### MovieRepository
@@ -428,6 +430,33 @@ class MoviesNotifier extends StateNotifier<List<Movie>> {
   }
 }
 ```
+
+#### Evitar peticiones simultáenas
+1. Crear variable bool isLoading.
+2. Retornar si isLoading es true.
+3. Si no es verdadera, inicializar a true.
+4. Colocar delay antes de que se asigne false a la variable para reducir aún más el tiempo de peticiones.
+5. colocar valor en false una vez que el proceso ha terminado.
+
+``` dart
+class MoviesNotifier extends StateNotifier<List<Movie>> {
+  int currentPage = 0;
+  bool isLoading = false;
+  MovieCallback fetchMoreMovies;
+  MoviesNotifier({required this.fetchMoreMovies}) : super([]);
+
+  Future<void> loadNextPage() async {
+    if (isLoading) return;
+    isLoading = true;
+    currentPage++;
+    final List<Movie> movies = await fetchMoreMovies(page: currentPage);
+    state = [...state, ...movies];
+    await Future.delayed(const Duration(milliseconds: 400));
+    isLoading = false;
+  }
+}
+```
+
 
 ### Archivo de barril
 1. presentation -> providers -> providers.dart
@@ -696,6 +725,179 @@ class HumanFormats {
 
 ```
 
+## 6. InfiniteScroll Horizontal
+- Así como se hizo en la sección de toktik, se llamará a una función que traiga a más películas y se agregaran a la lista de películas actuales.
+  - Se coloca un controller en el ListView. (Implica que se debe usar StatefulWidget).
+  - El Widget recibe una función de tipo VoidCallback la cual es opcional.
+  - En el listener del controlador se verifica que esté definida para poder usarla.
+  - Se invoca la función por medio de la posición actual del scroll.
+1. Convertir MoviesHorizontalListview a StatefulWidget.
+2. Crear e inicializar variable scrollController en la sección de state antes del built method.
+3. Asignar controllador a ListView por medio de campo controller.
+4. Declarar init.
+5. Agregar listener a scrollController en sección de init.
+  1. Revisar que loadNextPage no sea null.
+  2. Revisar que posición del scroll con un margen de gracia sea mayor o igual a la máxima posición del scroll.
+  3. Incovar función loadNextPage.
+6. Crear sección de dispose para utiliza método dispose en el controlador.
+  - Cada que se hace un listener se debe hacer un dispose.
+
+## 7. CustomScrollView y Slivers (home_screen.dart)
+- Slivers son widgets especiales para comportamiento con el scroll, y trabajan en conjunto con CustomScrollView.
+- CustomScrollView puede reemplazar a SingleChildScroll para evitar desbordamientos.
+
+### SliverList
+- Tiene el campo delegate.
+  - Se usa para crear Slivers o los widgets dentro de ListView.
+- Se le debe pasar SliverChildBuilderDelegate.
+  - Recibe un builder para poder construir los widgets deseados.
+  - Se retorna la Columna que se tenía para mostrar todos los Caruseles.
+  - El Widget de CustomAppbar ya no pertenecerá a la sección de Column, sino que se colocará en slivers envuelto con SliverAppBar.
+- Se tiene el campo countChildren.
+  - Se coloca en 1 para que solo renderice una vez la Column.
+
+
+``` dart
+    return CustomScrollView(
+      slivers: [
+        const SliverAppBar(
+          floating: true,
+          flexibleSpace: FlexibleSpaceBar(
+            title: CustomAppbar(),
+          ),
+        ),
+        SliverList(
+            delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            return Column(
+              children: [
+                MoviesSlideshow(movies: slideShowMovies),
+
+        SliverList(
+            delegate: SliverChildBuilderDelegate(
+          (context, index) {
+                            MoviesHorizontalListview(
+                  movies: nowPlayingMovies,
+                  title: 'Populares',
+                  subTitle: 'Desde siempre',
+                  loadNextPage: () {
+                    ref.read(nowPlayingMoviesProvider.notifier).loadNextPage();
+                  },
+                ),
+              ],
+            );
+          },
+          childCount: 1,
+        ))
+      ],
+    );
+```
+
+## 8. Obtener películas populares, upcoming y top rated
+- En la documentación de TheMoviesDB se encuentran los endpoints para recuperar las películas. (movie/popular).
+### Domain, Datasource (movies_datasource.dart)
+1. Definir signature del método para traer películas populares.
+### Domain, Repository (movies_reposity.dart)
+1. Definir signature del método para traer películas populares.
+### Infrastructure datasources (moviedb_datasource.dart), implementación de método ()
+``` dart
+class MovieDbDatasource extends MoviesDatasource {
+  final dio = Dio(BaseOptions(
+      baseUrl: 'https://api.themoviedb.org/3',
+      queryParameters: {
+        'api_key': Environment.theMovieDbKey,
+        'language': 'es-MX'
+      }));
+
+  List<Movie> _jsonToMovies(Map<String, dynamic> json) {
+    final movieDbResponse = MovieDbResponse.fromJson(json);
+    final List<Movie> movies = movieDbResponse.results
+        .where((moviedb) => moviedb.posterPath != 'no-poster')
+        .map((moviedb) => MovieMapper.movieDBToEntity(moviedb))
+        .toList();
+    return movies;
+  }
+
+  @override
+  Future<List<Movie>> getNowPlaying({int page = 1}) async {
+    final response =
+        await dio.get('/movie/now_playing', queryParameters: {'page': page});
+    return _jsonToMovies(response.data);
+  }
+
+  @override
+  Future<List<Movie>> getUpcoming({int page = 1}) async {
+    final response =
+        await dio.get('/movie/popular', queryParameters: {'page': page});
+    return _jsonToMovies(response.data);
+  }
+}
+```
+### Infrastructure repositories (moviedb_repository_impl.dart), implementación de método ()
+``` dart
+class MovieRepositoryImpl extends MoviesRepository {
+  final MoviesDatasource datasource;
+
+  MovieRepositoryImpl(this.datasource);
+  @override
+  Future<List<Movie>> getNowPlaying({int page = 1}) {
+    return datasource.getNowPlaying(page: page);
+  }
+
+  @override
+  Future<List<Movie>> getUpcoming({int page = 1}) {
+    return datasource.getUpcoming(page: page);
+  }
+}
+```
+
+### Llamar información en provider movies_providers.dart
+- Con Riverpod se pueden tener varias instancias de la clase en lugar de solo 1 como el caso de Provider.
+- De esta forma, se crea una instancia nueva de MoviesNotifier, en donde la callback ahora se alimenta de la referencia a la función getUpcoming da la implementación del repositorio, la cual está declarada en un provider.
+``` dart
+final upcomingMoviesProvider =
+    StateNotifierProvider<MoviesNotifier, List<Movie>>((ref) {
+  final fetchMoreMovies = ref.watch(movieRepositoryProvider).getUpcoming;
+  return MoviesNotifier(fetchMoreMovies: fetchMoreMovies);
+});
+
+```
+
+### Incovar provider en home_screen
+- Se debe hacer la lectura de la función loadNextPage para el provider en el init, de lo contrario no mostrará nada.
+
+``` dart
+  @override
+  void initState() {
+    super.initState();
+    ref.read(nowPlayingMoviesProvider.notifier).loadNextPage();
+    ref.read(upcomingMoviesProvider.notifier).loadNextPage();
+  }
+```
+
+- Leer información en el método build para poder pasar la variable a los widgets deseados.
+
+``` dart
+ Widget build(BuildContext context) {
+    final nowPlayingMovies = ref.watch(nowPlayingMoviesProvider);
+    final slideShowMovies = ref.watch(moviesSlideshowProvider);
+    final upcomingMovies = ref.watch(upcomingMoviesProvider);
+```
+
+``` dart
+                MoviesHorizontalListview(
+                  movies: upcomingMovies,
+                  title: 'Próximamente',
+                  subTitle: 'En este mes',
+                  loadNextPage: () {
+                    ref.read(upcomingMoviesProvider.notifier).loadNextPage();
+                  },
+                ),
+```
+
+## 9. FullScreen Loader - Diseño
+1. presentation -> widgets> shared -> full_screen_loader.dart
+
 # Buenas prácticas
 - Las importaciones importan.
     - Primero deben estar las de dart.
@@ -705,3 +907,5 @@ class HumanFormats {
 - Un cambio en las variables de entorno no redibuja a los widgets.
 - Hcaer que el estado que gestiona StateNotifier sea lo más simple posible.
 - Se recomienda no usar alturas mayores a 210 px.
+- Cada que se hace un listener se debe hacer un dispose.
+- ref.read se utiliza cuando se están dentro de funciones o callbacks.
