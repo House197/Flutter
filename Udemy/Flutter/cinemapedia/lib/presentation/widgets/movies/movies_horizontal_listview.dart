@@ -151,7 +151,7 @@ class _Title extends StatelessWidget {
           ),
         const Spacer(),
         if (title != null)
-          FilledButton(
+          FilledButton.tonal(
             style: const ButtonStyle(visualDensity: VisualDensity.compact),
             onPressed: () {},
             child: Text(

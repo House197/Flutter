@@ -896,8 +896,74 @@ final upcomingMoviesProvider =
 ```
 
 ## 9. FullScreen Loader - Diseño
+- Su objetivo es mostrar mensajes que vienen de una lista, en donde se irán tomando por medio de un Stream.
+  - Se utiliza un streamBuilder.
+  - Con los streams no hace falta cerrarlos cuando acaban, ya que lo hace en automático cuando se usa StreamBuilder.
 1. presentation -> widgets> shared -> full_screen_loader.dart
 
+``` dart
+class FullScreenLoader extends StatelessWidget {
+  const FullScreenLoader({super.key});
+
+  Stream<String> getLoadingMessages() {
+    final messages = <String>[
+      'Cargando películas',
+      'Comprando películas',
+      'Cargando populares',
+      'Ya casi',
+      'Cargando mejor puntuados',
+    ];
+    return Stream.periodic(const Duration(milliseconds: 1200), (step) {
+      return messages[step];
+    }).take(messages.length);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      const Text('Espere por favor'),
+      const SizedBox(height: 10),
+      const CircularProgressIndicator(strokeWidth: 2),
+      const SizedBox(height: 10),
+      StreamBuilder(
+          stream: getLoadingMessages(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Text('Cargando');
+            return Text(snapshot.data!);
+          })
+    ]));
+  }
+}
+```
+
+## 9. Mútiples providers simultáneamente
+- Hasta que todos los providers de películas tengan valor se va a quitar FullScreenLoader.
+1. presentation -> providers -> movies -> initial_loading_provider.dart
+  - Se va a basar de otros providers.
+  - No se va a cambiar manualmente, por lo que va a ser de solo lectura.
+
+``` dart
+final initialLoadingProvider = Provider<bool>((ref) {
+  final step1 = ref.watch(nowPlayingMoviesProvider).isEmpty;
+  final step2 = ref.watch(upcomingMoviesProvider).isEmpty;
+  final step3 = ref.watch(popularMoviesProvider).isEmpty;
+  final step4 = ref.watch(topRatedMoviesProvider).isEmpty;
+
+  if (step1 || step2 || step3 || step4) return true;
+  return false;
+});
+
+```
+
+# Sección 14. Películas individuales y actores
+## 1. Movie_screen.dart
+1. presentation -> screens -> movies -> movie_screen.dart 
+  - Recibe como parámetro el ID de una película en lugar de una Movie.
+  - Se hace para poder implementar conceptos como Deep Linking.
+    - Por ejemplo, para añadir la funcionalidad de share y que otra persona al hacer click al enlace pueda acceder a esa película y que se carguen los datos. Si se esperara una Movie, no se va a poder tener la Movie desde un enlace externo.
+
+- Se usa el provider con un if para retornar el widget de carga deseado.
 # Buenas prácticas
 - Las importaciones importan.
     - Primero deben estar las de dart.

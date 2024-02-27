@@ -7,7 +7,7 @@ class AppTheme {
   AppTheme({this.isDarkMode = false, this.selectedColor = 0});
 
   ThemeData getTheme() => ThemeData(
-        useMaterial3: false,
+        useMaterial3: true,
         colorSchemeSeed: const Color(0xFF2862F5),
       );
 }
