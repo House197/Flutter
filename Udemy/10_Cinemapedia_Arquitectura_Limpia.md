@@ -959,12 +959,334 @@ final initialLoadingProvider = Provider<bool>((ref) {
 # Sección 14. Películas individuales y actores
 ## 1. Movie_screen.dart
 1. presentation -> screens -> movies -> movie_screen.dart 
+``` dart
+class FullScreenLoader extends StatelessWidget {
+  const FullScreenLoader({super.key});
+
+  Stream<String> getLoadingMessages() {
+    final messages = <String>[
+      'Cargando películas',
+      'Comprando películas',
+      'Cargando populares',
+      'Ya casi',
+      'Cargando mejor puntuados',
+    ];
+    return Stream.periodic(const Duration(milliseconds: 1200), (step) {
+      return messages[step];
+    }).take(messages.length);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      const Text('Espere por favor'),
+      const SizedBox(height: 10),
+      const CircularProgressIndicator(strokeWidth: 2),
+      const SizedBox(height: 10),
+      StreamBuilder(
+          stream: getLoadingMessages(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Text('Cargando');
+            return Text(snapshot.data!);
+          })
+    ]));
+  }
+}
+
+```
   - Recibe como parámetro el ID de una película en lugar de una Movie.
   - Se hace para poder implementar conceptos como Deep Linking.
     - Por ejemplo, para añadir la funcionalidad de share y que otra persona al hacer click al enlace pueda acceder a esa película y que se carguen los datos. Si se esperara una Movie, no se va a poder tener la Movie desde un enlace externo.
-
+``` dart
+    final initialLoading = ref.watch(initialLoadingProvider);
+    if (initialLoading) return const FullScreenLoader();
+```
 - Se usa el provider con un if para retornar el widget de carga deseado.
-# Buenas prácticas
+
+## 2. Navegar a otra pnatalla con parámetros
+- Al seleccionar una película se navegará a su página junto con su ID.
+- Por medio de la siguiente técnica se puede explandir la aplicación par aplicaciones más allá de celulares.
+- Params siempre son strings.
+1. Crear una nueva ruta en router usando GoRoute.
+2. Extraer param por medio de state dado por builder.
+
+``` dart
+final appRouter = GoRouter(initialLocation: '/', routes: [
+  GoRoute(
+    path: '/',
+    name: HomeScreen.name,
+    builder: (context, state) => const HomeScreen(),
+  ),
+  GoRoute(
+      path: '/movie/:id',
+      name: MovieScreen.name,
+      builder: (context, state) {
+        final movieId = state.pathParameters['id'] ?? 'no-id';
+        return MovieScreen(movieId: movieId);
+      })
+]);
+
+```
+
+2. La imagen de la película se encargará de navegar a la ruta, por lo que en movie_horizontal_listview.dart la imagen se envuelve con un GestureDetector.
+``` dart
+                    return GestureDetector(
+                      onTap: () => context.push('/movie/${movie.id}'),
+                      child: child,
+                    );
+```
+- Al probar esto en la web y navegar directamente al link sin haber seleccionado una imagen la flecha para regresar no va a estar disponible.
+  - Esto se ajuste con la configuración de GoRouter.
+3. Configurar routes de GoRoute, los cuales son rutas hijas de la ruta correspondiente.
+``` dart
+final appRouter = GoRouter(initialLocation: '/', routes: [
+  GoRoute(
+      path: '/',
+      name: HomeScreen.name,
+      builder: (context, state) => const HomeScreen(),
+      routes: [
+        GoRoute(
+            path: 'movie/:id',
+            name: MovieScreen.name,
+            builder: (context, state) {
+              final movieId = state.pathParameters['id'] ?? 'no-id';
+              return MovieScreen(movieId: movieId);
+            })
+      ]),
+]);
+```
+- El / de la ruta de movie se quitó ya que ahora el padre lo da.
+
+## 3. Obtener película por ID - Datasource
+- Se pensaría en implementar un helper en el GoRoute, sin embargo éste solo debería encargarse de la navegación.
+- En TheMovieId la forma de buscar una película por ID es /movie/{movie_id}.
+- Se aprecia que la respuesta que entrega la API es diferente a la que se tiene, por lo que se debe crear un nuevo mapa,
+
+1. Agregar nuevo método en domain -> datasources -> movies_datasource.dart
+``` dart
+abstract class MoviesDatasource {
+  Future<List<Movie>> getNowPlaying({int page = 1});
+  Future<List<Movie>> getUpcoming({int page = 1});
+  Future<List<Movie>> getPopular({int page = 1});
+  Future<List<Movie>> getTopRated({int page = 1});
+  Future<Movie> getMovieById(String id);
+}
+```
+
+- Lo anterior también se coloca en la clase abstracta de repositorio. Se implementa el método en el repositorio al solo llamar al método desde el Datasource.
+
+2. Crear nuevo modelo para ajustar a la respuesta de la API
+  - El modelo va a ser específico de moviedb, ya que viene desde TheMovieDB.
+  1. infrastructure -> models -> moviedb -> movie_details.dart
+    - Se va usar para poder mapear la respuesta, lo cual va a servir para implementar el mapper de esa respuesta al objeto personalizado.
+  2. Copiar respuesta de Postman para la API.
+  3. Pegar objeto en QuickType, asegurándose que el lenguaje sea dart, null safety y make all properties final.
+  4. Copiar respuesta dada de quicktype, colocandole como nombre MovieDetails.
+  5. Pegar resultado en movie_details.dart
+    - La sección de código que permite generar una instancia por medio de un String es útil cuando se trasbaja con la librería http, pero dio ya lo hace. Son las primeras tres líneas comentadas.
+    - Ajustar los campos según las películas.
+3. creación de mapper.
+  1. Se crea un nuevo método en movie_mapper (movieDetailsToEntity).
+``` dart
+  static Movie movieDetailsToEntity(MovieDetails moviedb) => Movie(
+      adult: moviedb.adult,
+      backdropPath: moviedb.backdropPath != ''
+          ? 'https://image.tmdb.org/t/p/w500/${moviedb.backdropPath}'
+          : 'https://www.wnpower.com/blog/wp-content/uploads/sites/3/2023/06/error-404-que-es.png',
+      genreIds: moviedb.genres.map((e) => e.name).toList(),
+      id: moviedb.id,
+      originalLanguage: moviedb.originalLanguage,
+      originalTitle: moviedb.originalTitle,
+      overview: moviedb.overview,
+      popularity: moviedb.popularity,
+      posterPath: moviedb.posterPath != ''
+          ? 'https://image.tmdb.org/t/p/w500/${moviedb.posterPath}'
+          : 'no-poster',
+      releaseDate: moviedb.releaseDate,
+      title: moviedb.title,
+      video: moviedb.video,
+      voteAverage: moviedb.voteAverage,
+      voteCount: moviedb.voteCount);
+```
+4. Usar Mapper en implementación de método en Datasource (moviedb_datasource).
+``` dart
+  @override
+  Future<Movie> getMovieById(String id) async {
+    final response = await dio.get('/movie/$id');
+    if (response.statusCode != 200) throw Exception('Movie with id: $id not found');
+    final movieDetails = MovieDetails.fromJson(response.data);
+    final Movie movie = MovieMapper.movieDetailsToEntity(movieDetails);
+    return movie;
+  }
+```
+
+## 4. MovieDetails Caché Local
+- Los Widgets no llaman a las implementaciones, los widgets llaman a los providers que llaman a las implementaciones.
+- Se para una película ya se había recuperado su data, no se tiene que volver a hacer otra petición HTTP cuando se desee volver a cargar durante el ciclo de vida de la app.
+  - Si se desea refrescar la data se puede hacer con un botón para actualizar el caché.
+
+1. presentation -> providers -> movies -> movie_info_provider.dart
+  - No se desea colocar algo similar como con el provider de movies_providers.dart.
+  - Se crea una clase para mantener en caché las otras películas que se hayan consultado.
+  - Se le llama a la clase como MovieMapNotifier, ya que se va a terminar usando un Mapper.
+  - Se hace de la función de forma genérica para que pueda recibir cualquier caso de uso, no necesariamente la implementación del repositorio.
+  - Ya que se va a esperar una función que específicamente retorna algo, se crea un nuevo typedef.
+    - typedef ayuda a colocar la definición del callback.
+2. Crear MovieMapNotifier.
+``` dart
+/*
+
+  {
+    '2324': Movie(),
+    '3254': Movie(),
+  }
+
+*/
+
+typedef GetMovieCallback = Future<Movie> Function(String movieId);
+
+class MovieMapNotifier extends StateNotifier<Map<String, Movie>> {
+  final GetMovieCallback getMovie;
+  MovieMapNotifier({required this.getMovie}) : super({});
+
+  Future<void> loadMovie(String movieId) async {
+    if (state[movieId] != null) return;
+
+    final movie = await getMovie(movieId);
+    state = {...state, movieId: movie};
+  }
+}
+
+```
+3. Crear Provider.
+``` dart
+
+final movieInfoProvider = StateNotifierProvider<MovieMapNotifier, Map<String, Movie>>((ref) {
+  final getMovie = ref.watch(movieRepositoryProvider).getMovieById;
+  return MovieMapNotifier(getMovie: getMovie);
+});
+
+```
+
+## 5. Realizar la petición HTTP y prueva de caché
+1. Crear ConsumerStatefulWidget en movie_screen.dart y ConsumerState.
+2. Override init para realizar petición http.
+  - Se utiliza ref.read, ya que se usa en mpetodos initState o como callback en onTap, onLongTap, etc.
+    - Esto es así porque no se desea que se redibuje.
+``` dart
+  @override
+  void initState() {
+    super.initState();
+
+    ref.read(movieInfoProvider.notifier).loadMovie(widget.movieId);
+  }
+```
+- Al usar el provider para realizar la petición HTTP evalua si en el state no existe ya la película antes de hacer esa petición.
+3. Extraer la película del state en el método Build.
+  - Si la película es null entonces se saber que se hace una petición HTTP.
+
+``` dart
+  @override
+  Widget build(BuildContext context) {
+    final Movie? movie = ref.watch(movieInfoProvider)[widget.movieId];
+
+    if (movie == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            strokeAlign: 2,
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('MovieID: ${widget.movieId}'),
+      ),
+    );
+  }
+}
+```
+
+### Diseño de la ventana
+1. Envolver cuerpo principal CustomScrollView para trabajar con Slivers.
+2. Crear Weidge CustomSliverAppBar.
+  - Ocupará el 70% de la pantalla, lo cual se consigue con una MediaQuery y su campo de expandedHeight.
+  - Por medio del campo dado por el otro campo flexibleSpacear: FlexibleSpacebar se colocará la imagen.
+    - Se le coloca un Stack.
+    - Se usa la estrategia de colocar un gradiente.
+
+``` dart
+class _CustomSliverAppBar extends StatelessWidget {
+  final Movie movie;
+  const _CustomSliverAppBar({required this.movie});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return SliverAppBar(
+      backgroundColor: Colors.black,
+      expandedHeight: size.height * 0.7,
+      foregroundColor: Colors.white,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        title: Text(
+          movie.title,
+          style: const TextStyle(fontSize: 20),
+          textAlign: TextAlign.start,
+        ),
+        background: Stack(
+          children: [
+            SizedBox.expand(
+              child: Image.network(
+                movie.posterPath,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox.expand(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.7, 1.0],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black87,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox.expand(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    stops: [0.0, 0.3],
+                    colors: [
+                      Colors.black87,
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+### Descripción de la película
+1. Colocar SliverList en slivers.
+2. Crear Widget _MovieDetails.
+
+# Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
     - Segundo las de Material o paquetes de Flutter.
@@ -975,3 +1297,6 @@ final initialLoadingProvider = Provider<bool>((ref) {
 - Se recomienda no usar alturas mayores a 210 px.
 - Cada que se hace un listener se debe hacer un dispose.
 - ref.read se utiliza cuando se están dentro de funciones o callbacks.
+- Los Widgets no llaman a las implementaciones, los widgets llaman a los providers que llaman a las implementaciones. Esto se hace así para tenerlo centralizado.
+- physics: const ClampingScrollPhysics se evita tener el rebote en los dispositivos iOS.
+- Los gradientes se colocan con DecoratedBox.
