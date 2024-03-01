@@ -1286,6 +1286,76 @@ class _CustomSliverAppBar extends StatelessWidget {
 1. Colocar SliverList en slivers.
 2. Crear Widget _MovieDetails.
 
+## 6. Actores de películas
+- El provider de movieInforProvider debería encargarse solamente de las películas, por lo que se creará otro provider destinado a los actores.
+1. Crear entidad actor.dart
+  - domain -> entities -> actor.dart
+
+``` dart
+class Actor {
+  final int id;
+  final String name;
+  final String profilePath;
+  final String? character;
+
+  Actor({required this.id, required this.name, required this.profilePath, required this.character});
+}
+```
+
+2. domain -> datasources -> actors_datasource.dart
+3. domain -> repositories -> actors_repository.dart
+4. Crear Modelo, 
+  0. infrastructure -> models -> moviedb -> credits_response.dart. (solo coloca en folder de movieDB ya que el origen de datos sigue siendo   desde TheMovieDB).
+  1. Copiar respuesta de la api https://api.themoviedb.org/3/movie/155?api_key={apiKey}&language=es-MX
+  2. Pegar modelo en quicktype.io
+  3. Nombrar código generado como CreditsResponse.
+    - Asegurarse que el lenguaje es dart, null safety y make all properties final.
+  4. Hacer moficiaciones en el código. 
+    - Usualmente se debe checar las enumeraciones creadas, P/e:
+      - Eliminar enumaraciones y variable de departmentValues.
+        - Corregir las secciones en donde se usaba el tipo Department, colocando String en su lugar.
+5. Mappers
+  1. infrastructure -> mappers -> actor_mapper.dart. (usualmente su nombre se inspira del nombre de su entidad).
+  2. Crear método estático castToEntity.
+    - En su argumento debe recibir un tipo Cast, el cual es el que se interesa de los campos que presenta CreditsResponse.
+``` dart
+class ActorMapper {
+  static Actor castToEntity(Cast cast) => Actor(
+        id: cast.id,
+        name: cast.name,
+        profilePath: cast.profilePath != null
+            ? 'https://image.tmdb.org/t/p/w500/${cast.profilePath}'
+            : 'https://www.wnpower.com/blog/wp-content/uploads/sites/3/2023/06/error-404-que-es.png',
+        character: cast.character,
+      );
+}
+```
+
+6. Implementación de datasource
+  1. infrastructure -> datasources -> actor_moviedb_datasource.dart
+  2. Colocar override del método al que se le va a hacer implementación.
+  3. Definir objeto Dio con opciones base en el nivel superior de la clase.
+  4. Realizar petición http en el método.
+  5. Crear instancia de CreditsReponse a partir del resultado de la petición HTTP.
+  6. Crear lista de actores a partir del mapero de cada elemento del cast aplicando el mapper de actores.
+  7. Retornar resultado.
+
+7. Implementación Repositorio.
+  1. infrastructure -> repositories -> actor_repository_impl.dart
+``` dart
+class ActorRepositoryImpl extends ActorRepository {
+  final ActorDatasource datasource;
+
+  ActorRepositoryImpl({required this.datasource});
+
+  @override
+  Future<List<Actor>> getActorsByMovie(String movieId) {
+    return datasource.getActorsByMovie(movieId);
+  }
+}
+
+```
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
