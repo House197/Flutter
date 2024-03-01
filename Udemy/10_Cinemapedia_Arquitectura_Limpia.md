@@ -1353,8 +1353,10 @@ class ActorRepositoryImpl extends ActorRepository {
     return datasource.getActorsByMovie(movieId);
   }
 }
-
 ```
+
+8. Provider
+  1. presentation -> providers -> actors -> actors_by_movie_provider.dart
 
 # Buenas prácticas y notas
 - Las importaciones importan.
