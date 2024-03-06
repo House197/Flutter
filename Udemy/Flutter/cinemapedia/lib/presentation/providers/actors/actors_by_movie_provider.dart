@@ -1,22 +1,33 @@
 import 'package:cinemapedia/domain/entities/actor.dart';
-import 'package:flutter/material.dart';
+import 'package:cinemapedia/presentation/providers/actors/actors_repository_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final actorInfoProvider = StateNotifierProvider<ActorMapNotifier, Map<String, Actor>>((ref) {
-  final getMovie = ref.watch(movieRepositoryProvider).getMovieById;
-  return MovieMapNotifier(getMovie: getMovie);
+final actorByMovieProvider =
+    StateNotifierProvider<ActorsByMovieNotifier, Map<String, List<Actor>>>(
+        (ref) {
+  final getActors = ref.watch(actorRepositoryProvider).getActorsByMovie;
+  return ActorsByMovieNotifier(getActors: getActors);
 });
 
-typedef GetActorCallback = Future<Actor> Function(String movieId);
+/*
 
-class ActorMapNotifier {
-  final GetActorCallback getActors;
+  {
+    '2324': <Actor>[],
+    '3254': <Actor>[],
+  }
 
-  ActorMapNotifier({required this.getActors});
+*/
+
+typedef GetActorsCallback = Future<List<Actor>> Function(String movieId);
+
+class ActorsByMovieNotifier extends StateNotifier<Map<String, List<Actor>>> {
+  final GetActorsCallback getActors;
+
+  ActorsByMovieNotifier({required this.getActors}) : super({});
 
   Future<void> loadActors(String movieId) async {
     if (state[movieId] != null) return;
-    final movie = await getMovie(movieId);
-    state = {...state, movieId: movie};
+    final actors = await getActors(movieId);
+    state = {...state, movieId: actors};
   }
 }

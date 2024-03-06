@@ -1356,7 +1356,66 @@ class ActorRepositoryImpl extends ActorRepository {
 ```
 
 8. Provider
-  1. presentation -> providers -> actors -> actors_by_movie_provider.dart
+  1. presentation -> providers -> actors -> actors_repository_provider.dart
+``` dart
+import 'package:cinemapedia/infrastructure/datasources/actor_moviedb_datasource.dart';
+import 'package:cinemapedia/infrastructure/repositories/actor_repository_impl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Repositorio inmutable.
+final actorRepositoryProvider = Provider((ref) {
+  return ActorRepositoryImpl(ActorMovieDbDatasource());
+});
+```
+  2. presentation -> providers -> actors -> actors_by_movie_provider.dart
+    1. Sigue la misma lógica que como se hizo con las películas, en donde se van guardando en caché.
+``` dart
+import 'package:cinemapedia/domain/entities/actor.dart';
+import 'package:cinemapedia/presentation/providers/actors/actors_repository_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final actorByMovieProvider =
+    StateNotifierProvider<ActorsByMovieNotifier, Map<String, List<Actor>>>(
+        (ref) {
+  final getActors = ref.watch(actorRepositoryProvider).getActorsByMovie;
+  return ActorsByMovieNotifier(getActors: getActors);
+});
+
+/*
+
+  {
+    '2324': <Actor>[],
+    '3254': <Actor>[],
+  }
+
+*/
+
+typedef GetActorsCallback = Future<List<Actor>> Function(String movieId);
+
+class ActorsByMovieNotifier extends StateNotifier<Map<String, List<Actor>>> {
+  final GetActorsCallback getActors;
+
+  ActorsByMovieNotifier({required this.getActors}) : super({});
+
+  Future<void> loadActors(String movieId) async {
+    if (state[movieId] != null) return;
+    final actors = await getActors(movieId);
+    state = {...state, movieId: actors};
+  }
+}
+```
+
+9. Prueba de obtención de actores.
+  1. En movie_screen se coloca la lectura del provider en init.
+``` dart
+  @override
+  void initState() {
+    super.initState();
+
+    ref.read(movieInfoProvider.notifier).loadMovie(widget.movieId);
+    ref.read(actorByMovieProvider.notifier).loadActors(widget.movieId);
+  }
+```
 
 # Buenas prácticas y notas
 - Las importaciones importan.
