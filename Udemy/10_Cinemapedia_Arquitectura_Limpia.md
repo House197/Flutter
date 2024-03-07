@@ -1482,6 +1482,127 @@ class SearchMovieDelegate extends SearchDelegate {
 }
 ```
 
+4. Se cambia la palabra placeholder con el override del getter searchFiledLabel.
+
+``` dart
+                IconButton(
+                  onPressed: () {
+                    showSearch(
+                        context: context, delegate: SearchMovieDelegate());
+                  },
+                  icon: const Icon(Icons.search),
+                )
+```
+
+### buildLeading
+- buildLeading es lo que se usa para salir de una búsqueda (cuando se encuentra lo que se deseabada y ahora se quiere salir.)
+  - Se puede usar para lo que se desee.
+  - Se tiene el método close dado por la clase SearchDelegate.
+    - result es lo que se desea regresar cuando se cierre showSearch.
+      - Por esta razón se especifica que la clase SearchDelegate puede retornar una movie.
+        - Puede retornar solo una parte de la clase, pero se decide mejor enviar todo el objeto.
+      - Se considera en este caso que la persona solo desea salir de la ventana, por lo que no retorna nada.
+
+``` dart
+class SearchMovieDelegate extends SearchDelegate<Movie?> {
+  @override
+  String get searchFieldLabel => 'Buscar peli';
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [const Text('buildActions')];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        close(context, null);
+      },
+      icon: const Icon(Icons.arrow_back),
+    );
+  }
+}
+```
+
+### Actions
+- Se va colocar un botón se sirve para limpiar lo que la perosna escribe.
+- El texto de la caja de search se tiene por medio de query, la cual es una palabra reservada de SearchDelegate.
+  - Cada que el query cambia se disparan las acciones.
+
+``` dart
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      FadeIn(
+        animate: query.isNotEmpty,
+        duration: const Duration(milliseconds: 200),
+        child: IconButton(
+          onPressed: () => query = '',
+          icon: const Icon(Icons.clear),
+        ),
+      )
+    ];
+  }
+```
+
+### Construir sugerencias - Petición HTTP (buildSuggestions)
+- Con ayuda de debounde se previene que la petición se dispare cada que se presiona una tecla.
+#### Forma básica
+- Se debe llamar searchMovies, lo cual ya está implementado en el reposiutorio movie_repository_impl
+1. Se define un tipo de función específica para llamar a la función dada por el provider movieRepositoryProvider.
+
+``` dart
+typedef SearchMovieCallback = Future<List<Movie>> Function(String query);
+
+class SearchMovieDelegate extends SearchDelegate<Movie?> {
+  final SearchMovieCallback searchMovies;
+
+  SearchMovieDelegate({
+    required this.searchMovies,
+  });
+
+  @override
+  String get searchFieldLabel => 'Buscar peli';
+```
+
+2. En buildSuggestions se va a construir los widgets por medio de un future, por lo que se debe usar FutureBuilder.
+
+``` dart
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return FutureBuilder(
+        future: searchMovies(query),
+        builder: (context, snapshot) {
+          final movies = snapshot.data ?? [];
+          return ListView.builder(
+              itemCount: movies.length,
+              itemBuilder: (context, index) {
+                final movie = movies[index];
+                return ListTile(
+                  title: Text(
+                    movie.title,
+                  ),
+                );
+              });
+        });
+  }
+```
+
+3. Se pasa la función como argumento desde custom_appbar.
+
+``` dart
+                    final movieRepository = ref.read(movieRepositoryProvider);
+                    showSearch(
+                      context: context,
+                      delegate: SearchMovieDelegate(
+                          searchMovies: movieRepository.searchMovie),
+                    );
+```
+
+### Mostrar películas en la búsqueda
+
+  
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
