@@ -1417,6 +1417,71 @@ class ActorsByMovieNotifier extends StateNotifier<Map<String, List<Actor>>> {
   }
 ```
 
+# Sección 15. Search Delegate
+## Temas
+- SearchDelegate
+- Datasources
+- Repositorios
+- Búsquedas contra TheMovieDB
+- Debouncer
+- Streams
+- Builders
+- DRY
+- Providers
+
+En esta sección construiremos un motor de búsqueda completo y robusto para que nuestros usuarios puedan buscar sus películas ahí y preservar búsquedas anteriores para mejorar el rendimiento del mismo.
+
+## 1. Datasource y Repository - SearchMovies
+1. Para la búsqueda de películas se usará el datasource de MoviesDatasource.
+  1. domain -> datasources -> movies_datasource.dart
+  2. Se define el signaturesearchMovies, el cual recibe como argumento la query que contiene la película a buscar.
+2. Se coloca el mismo signature en la regla de negocio del repositorio.
+3. Implementaciones.
+  1. Se ocupa el mismo modelo de moviedb_response para la implementación del método en el datasource.
+4. Provider.
+  - No se va a ocupar otro provider a parte del que ya se tiene para ocupar la implementación del repositario.
+
+## 2. SearchDelegate
+1. presentation -> widgets -> shared -> custom_appbar.dart
+  - Flutter ofrece la función showSearch, la cual es provista por buildContext.
+
+### ShowSearch, campo delegate
+- Es de tipo SearchDelegate, el cual retorna algo de tipo dinámico.
+  - Permite retornar una sección de información de la película, tal como su id o toda la información.
+- Delegate se va a encargar de trabajar la búsqueda.
+
+## 3. Delegate
+1. presentation -> delegates -> search_movie_delegate.dart.
+2. Se crea una clae que extiende SarchDelegate.
+3. Se hace override de los campos que pide.
+  - Se aprecia que al seleccionar el botón que invoca showCase se abre una nueva ventana, la cual muestra los texto definidos en los métodos para ver qué funcionalidad presentan.
+
+``` dart
+import 'package:flutter/material.dart';
+
+class SearchMovieDelegate extends SearchDelegate {
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [const Text('buildActions')];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return const Text('buildLeading');
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return const Text('buildResults');
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return const Text('buildSuggestions');
+  }
+}
+```
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
