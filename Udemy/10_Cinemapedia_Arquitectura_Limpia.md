@@ -1601,6 +1601,134 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
 ```
 
 ### Mostrar películas en la búsqueda
+``` dart
+ @override
+  Widget buildSuggestions(BuildContext context) {
+    return FutureBuilder(
+        future: searchMovies(query),
+        builder: (context, snapshot) {
+          final movies = snapshot.data ?? [];
+          return ListView.builder(
+              itemCount: movies.length,
+              itemBuilder: (context, index) {
+                final movie = movies[index];
+                return _MovieItem(movie: movie);
+              });
+        });
+  }
+}
+
+class _MovieItem extends StatelessWidget {
+  final Movie movie;
+  const _MovieItem({required this.movie});
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyles = Theme.of(context).textTheme;
+    final size = MediaQuery.of(context).size;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: Row(
+        children: [
+          SizedBox(
+            width: size.width * 0.2,
+            child: Image.network(movie.posterPath),
+          ),
+          const SizedBox(
+            width: 10,
+          ),
+          SizedBox(
+            width: size.width * 0.7,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  movie.title,
+                  style: textStyles.titleMedium,
+                ),
+                (movie.overview.length > 100)
+                    ? Text('${movie.overview.substring(0, 100)}...')
+                    : Text(movie.overview),
+                Row(
+                  children: [
+                    Icon(Icons.star_half_rounded,
+                        color: Colors.yellow.shade800),
+                    SizedBox(
+                      width: 5,
+                    ),
+                    Text(
+                      HumanFormats.number(movie.voteAverage, 1),
+                      style: textStyles.bodySmall!
+                          .copyWith(color: Colors.yellow.shade900),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+```
+
+## 4. Regresar de la búsqueda con argumentos
+- Se tiene el Widget _MovieItem, el cual es externo a SearchDelegate.
+  - Entonces, a modo de poder usar close se va a recibir la función deseada (close).
+  - En los argumentos de la función que llega como parámetro se pasa context y la película que se desea retornar.
+
+``` dart
+                return _MovieItem(
+                  movie: movie,
+                  onMovieSelected: close,
+                );
+```
+
+``` dart
+class _MovieItem extends StatelessWidget {
+  final Movie movie;
+  final Function onMovieSelected;
+  const _MovieItem({required this.movie, required this.onMovieSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyles = Theme.of(context).textTheme;
+    final size = MediaQuery.of(context).size;
+    return GestureDetector(
+      onTap: () => onMovieSelected(context, movie),
+```
+
+- En custom_appbar.dart se especifica que el tipo de dato que puede retornar showSearch puede ser una película, la cual es opcional ya que el usuario pudo salir de la sección de búsqueda sin haber buscado algo.
+
+``` dart
+             IconButton(
+                  onPressed: () {
+                    final movieRepository = ref.read(movieRepositoryProvider);
+                    showSearch<Movie?>(
+                      context: context,
+                      delegate: SearchMovieDelegate(searchMovies: movieRepository.searchMovies),
+                    ).then((movie) {
+                      if (movie == null) return;
+                      context.push('/movie/${movie.id}');
+                    });
+                  },
+                  icon: const Icon(Icons.search),
+                )
+```
+
+## 5. Debounce Manual
+- Se va a limitar el número de peticiones que se realizan al momento de buscar sugerencias, ya que cada que se presiona una tecla se realizan peticiones.
+- Se plantea reemplazar FutureBuilder en search_movie_delegate por un StreamBuilder, para que cada que el Stream personalizado emita valores ahí es cuando se va a renderizar el contenido. El Stream va a eimitr valores cuando la persona deja de escribir.
+- Se crea un nuevo método _onQueryChanged para emitir el resultado de las películas.
+- Cuando se deja de escribir por un determinado tiempo, se puede hacer sin tener que descargar otro paquete por medio de un timer.
+  1. Si el timer está activo entonces se limpia.
+  2. Crear debounceTimer.
+  - La idea es limpiar el timer cada que la persona está escribiendo, y cuando deja de escribir y el timer llega al tiempo establecido entonces realiza la petición.
+- Cuando se cierra la ventana de búsqueda se debe limpiar el Stream actual.
+  1. Crear función para limpiar Stream.
+  2. Incovar función antes de close en buildLeading.
 
   
 # Buenas prácticas y notas
@@ -1617,3 +1745,8 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
 - Los Widgets no llaman a las implementaciones, los widgets llaman a los providers que llaman a las implementaciones. Esto se hace así para tenerlo centralizado.
 - physics: const ClampingScrollPhysics se evita tener el rebote en los dispositivos iOS.
 - Los gradientes se colocan con DecoratedBox.
+
+- No usar BuildContext across async gaps.
+  - Esto sucede que ya que el BuildContext pudo haber cambiado en lo que se espera a que se cumpla la promesa. Por lo que no se recomienda usarlo en showSearch ya que es un Future.
+  - Se puede recurrir a then, ya que permite tomar el valor del contexto cuando se ejecutan los bloques de código.
+- Si se realiza un Stream de la forma StreamController() solo va a poder tener un listener. Se pueden tener varios lugares en donde se escuche al Stream, por lo que se puede usar StreamController.broadcast(). Con Broadcast cada que se redibuje el Widget éste se volverá a suscribir al Stream
