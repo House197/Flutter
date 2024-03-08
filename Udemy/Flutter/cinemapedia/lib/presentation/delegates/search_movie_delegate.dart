@@ -9,11 +9,14 @@ typedef SearchMovieCallback = Future<List<Movie>> Function(String query);
 
 class SearchMovieDelegate extends SearchDelegate<Movie?> {
   final SearchMovieCallback searchMovies;
+  final List<Movie> initialMovies;
+
   StreamController<List<Movie>> debouncedMovies = StreamController.broadcast();
   Timer? _debounceTimer;
 
   SearchMovieDelegate({
     required this.searchMovies,
+    required this.initialMovies,
   });
 
   void clearStreams() {
@@ -24,11 +27,6 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
 
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-      if (query.isEmpty) {
-        debouncedMovies.add([]);
-        return;
-      }
-
       final movies = await searchMovies(query);
       debouncedMovies.add(movies);
     });
@@ -85,6 +83,7 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
     _onQueryChanged(query);
     return StreamBuilder(
         //future: searchMovies(query),
+        initialData: initialMovies,
         stream: debouncedMovies.stream,
         builder: (context, snapshot) {
           final movies = snapshot.data ?? [];
@@ -92,9 +91,12 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
               itemCount: movies.length,
               itemBuilder: (context, index) {
                 final movie = movies[index];
-                return ListTile(
-                  title: Text(movie.title),
-                );
+                return _MovieItem(
+                    movie: movie,
+                    onMovieSelected: (context, movie) {
+                      clearStreams();
+                      close(context, movie);
+                    });
               });
         });
   }
@@ -135,9 +137,7 @@ class _MovieItem extends StatelessWidget {
                   Row(
                     children: [
                       Icon(Icons.star_half_rounded, color: Colors.yellow.shade800),
-                      SizedBox(
-                        width: 5,
-                      ),
+                      const SizedBox(width: 5),
                       Text(
                         HumanFormats.number(movie.voteAverage, 1),
                         style: textStyles.bodySmall!.copyWith(color: Colors.yellow.shade900),

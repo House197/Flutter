@@ -1722,15 +1722,212 @@ class _MovieItem extends StatelessWidget {
 - Se va a limitar el número de peticiones que se realizan al momento de buscar sugerencias, ya que cada que se presiona una tecla se realizan peticiones.
 - Se plantea reemplazar FutureBuilder en search_movie_delegate por un StreamBuilder, para que cada que el Stream personalizado emita valores ahí es cuando se va a renderizar el contenido. El Stream va a eimitr valores cuando la persona deja de escribir.
 - Se crea un nuevo método _onQueryChanged para emitir el resultado de las películas.
+``` dart
+  void _onQueryChanged(String query) {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      if (query.isEmpty) {
+        debouncedMovies.add([]);
+        return;
+      }
+
+      final movies = await searchMovies(query);
+      debouncedMovies.add(movies);
+    });
+  }
+```
 - Cuando se deja de escribir por un determinado tiempo, se puede hacer sin tener que descargar otro paquete por medio de un timer.
   1. Si el timer está activo entonces se limpia.
   2. Crear debounceTimer.
   - La idea es limpiar el timer cada que la persona está escribiendo, y cuando deja de escribir y el timer llega al tiempo establecido entonces realiza la petición.
 - Cuando se cierra la ventana de búsqueda se debe limpiar el Stream actual.
   1. Crear función para limpiar Stream.
+``` dart
+  void clearStreams() {
+    debouncedMovies.close();
+  }
+```
   2. Incovar función antes de close en buildLeading.
+``` dart
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        clearStreams();
+        close(context, null);
+      },
+      icon: const Icon(Icons.arrow_back),
+    );
+  }
+```
 
+- De igual manera, al momento de seleccionar una película para navegar a su descripción se debe limpiar el stream, por lo que a _MovieItem también se le pasa la función de limpieza.
+
+``` dart
+_MovieItem(
+                    movie: movie,
+                    onMovieSelected: (contex, movie) {
+                      clearStreams();
+                      close(context, movie);
+                    });
+```
+
+## 6. Search Movies Providers
+- Se desea guardar la búsqueda colocada en el input cada que se salga.
+
+- Usar el campo de query de showSearch, en donde su valor se guarda en un provider.
+  - Esto hacer que se dispare la petición cada que se vuelve a entrar al search, ya que las películas no se persisten.
+- Se mantendrán las películas en un StateProvider.
   
+1. presentation -> providers -> search -> search_movies_provider.dart
+2. Mantener String en un StateProvider.
+
+``` dart
+final searchQueryProvider = StateProvider<String>((ref) => '');
+```
+
+3. Usar el valor del provider en query de showSearch en custom_appbar.dart
+4. Actaulizar el valor del provider.
+  - La función que se usa para buscar las películas lo va a registrar.
+  - searchMovies es la función qe se llama con el query de búsqueda.
+
+``` dart
+                  onPressed: () {
+                    final searchQuery = ref.read(searchQueryProvider);
+                    final movieRepository = ref.read(movieRepositoryProvider);
+                    showSearch<Movie?>(
+                      query: searchQuery,
+                      context: context,
+                      delegate: SearchMovieDelegate(searchMovies: (query) {
+                        ref.read(searchQueryProvider.notifier).update((state) => query);
+                        return movieRepository.searchMovies(query);
+                      }),
+                    )}
+```
+
+## 07. Mantener un estado con las películas buscadas
+1. Se usa un StateNotifierProvider.
+2. El método SearchedMoviesNotifier searchMoviesByQuery se va a encargar de actaulizar también la query para mantener simple la función de searchMovies en custom_appbar.dart.
+3. Para poder también actualizar la query entonces la clase debe recibir como argumento el ref.
+
+``` dart
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final searchedMoviesProvider = StateNotifierProvider<SearchedMoviesNotifier, List<Movie>>((ref) {
+  final searchMovies = ref.read(movieRepositoryProvider).searchMovies;
+  return SearchedMoviesNotifier(searchMovies: searchMovies, ref: ref);
+});
+
+typedef SearchMoviesCallback = Future<List<Movie>> Function(String query);
+
+class SearchedMoviesNotifier extends StateNotifier<List<Movie>> {
+  final SearchMoviesCallback searchMovies;
+  final Ref ref;
+  SearchedMoviesNotifier({
+    required this.searchMovies,
+    required this.ref,
+  }) : super([]);
+
+  Future<List<Movie>> searchMoviesByQuery(String query) async {
+    final List<Movie> movies = await searchMovies(query);
+    ref.read(searchQueryProvider.notifier).update((state) => query);
+    state = movies;
+    return movies;
+  }
+}
+```
+
+4. Llamar provider en custom_appbar.
+
+``` dart
+               IconButton(
+                  onPressed: () {
+                    final searchQuery = ref.read(searchQueryProvider);
+                    final searchedMovies = ref.read(searchedMoviesProvider);
+                    showSearch<Movie?>(
+                      query: searchQuery,
+                      context: context,
+                      delegate: SearchMovieDelegate(
+                          initialMovies: searchedMovies, searchMovies: ref.read(searchedMoviesProvider.notifier).searchMoviesByQuery),
+                    ).then((movie) {
+                      if (movie == null) return;
+                      context.push('/movie/${movie.id}');
+                    });
+                  },
+                  icon: const Icon(Icons.search),
+                )
+```
+
+5. Mostrar películas almacenadas
+  - En Search Delegate se define el argumento initial movies
+
+``` dart
+class SearchMovieDelegate extends SearchDelegate<Movie?> {
+  final SearchMovieCallback searchMovies;
+  final List<Movie> initialMovies;
+
+  StreamController<List<Movie>> debouncedMovies = StreamController.broadcast();
+  Timer? _debounceTimer;
+
+  SearchMovieDelegate({
+    required this.searchMovies,
+    required this.initialMovies,
+  });
+```
+6. Colocar initialData en StreamBuilder del delegate en buildSuggestions
+
+``` dart
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    _onQueryChanged(query);
+    return StreamBuilder(
+        //future: searchMovies(query),
+        initialData: initialMovies,
+        stream: debouncedMovies.stream,
+        builder: (context, snapshot) {
+          final movies = snapshot.data ?? [];
+          return ListView.builder(
+              itemCount: movies.length,
+              itemBuilder: (context, index) {
+                final movie = movies[index];
+                return _MovieItem(
+                    movie: movie,
+                    onMovieSelected: (context, movie) {
+                      clearStreams();
+                      close(context, movie);
+                    });
+              });
+        });
+  }
+}
+```
+
+7. Llamar searchMoviesByQuery en _onQueryChanged de SearchMovieDelegate cuando query es vacía.
+  - Desde la implementación del datasource se verifica que la query no se vacía antes de hacer la consulta.
+  - Quitar null checker de onQueryChanged para que siempre llegue a la parte en donde se actualiza el provider.
+
+``` dart
+  @override
+  Future<List<Movie>> searchMovies(String query) async {
+    if (query.isEmpty) return [];
+    final response = await dio.get('/search/movie', queryParameters: {'query': query});
+    if (response.statusCode != 200) throw Exception('Movie $query not found');
+    return _jsonToMovies(response.data);
+  }
+```
+
+``` dart
+  void _onQueryChanged(String query) {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      final movies = await searchMovies(query);
+      debouncedMovies.add(movies);
+    });
+  }
+```
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
