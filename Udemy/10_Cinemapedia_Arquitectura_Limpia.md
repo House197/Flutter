@@ -1928,6 +1928,118 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
   }
 ```
 
+## 08. BuildResults
+- Es similar al buildSuggestions.
+  - Por el momento al presionar enter la buscar películas no arroja nada, solo arroja resultados cuando se deja de escribir.
+  - Si se copia y pega lo de buildSuggestions entonces no aparece nada con enter, ya que el StreamBuilder crea un nuevo listener, pero el stream usado no ha emitido ningún valor a comparación con el que se usa en Sugggestions que ya emitió valores.
+  - Si se escribre rápidamente y se presiona buscar sí van a aparecer los resultados.
+    - Sucede porque cuando se presiona enter el StreamBuilder de buildResults se crea, y el stream debouncedMovies emite el valor.
+  - En otras palabras, si se escribe lento y se presiona enter el stream ya emitió sus valores, por lo que no habrá ningún valor al dar enter.
+
+### Solución ideal.
+- Lo más fácil sería deshabilitar el enter, pero no es una opción dada por Flutter.
+1. Se va a cambiar initialMovies y ya no va a ser final, ya que se desea cambiar después.
+2. Inicializar initialMovies en _onQueryChanged asignandole las movies recuperadas.
+3. En buildResults, el campo de initialData de buildResults va a ser initialMovies.
+
+## 09. DRY
+- Se coloca un método que retorne un Widget, el cual corresponde con el de buildResults y buildSuggestions.
+
+``` dart
+  Widget buildResultsAndSuggestions() {
+    return StreamBuilder(
+        //future: searchMovies(query),
+        initialData: initialMovies,
+        stream: debouncedMovies.stream,
+        builder: (context, snapshot) {
+          final movies = snapshot.data ?? [];
+          return ListView.builder(
+              itemCount: movies.length,
+              itemBuilder: (context, index) {
+                final movie = movies[index];
+                return _MovieItem(
+                    movie: movie,
+                    onMovieSelected: (context, movie) {
+                      clearStreams();
+                      close(context, movie);
+                    });
+              });
+        });
+  }
+```
+
+## 10. Loading de búsqueda de películas
+1. Se coloca en buildActions.
+2. Por medio de un stream se va a decidir cuál icono mostrar (el de borrado o el de carga).
+
+``` dart
+  void _onQueryChanged(String query) {
+    isLoadingStream.add(true);
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      final movies = await searchMovies(query);
+      initialMovies = movies;
+      debouncedMovies.add(movies);
+      isLoadingStream.add(false);
+    });
+  }
+```
+
+``` dart
+StreamController<bool> isLoadingStream = StreamController.broadcast();
+```
+
+``` dart
+ @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      StreamBuilder(
+          initialData: false,
+          stream: isLoadingStream.stream,
+          builder: (context, snapshot) {
+            if (snapshot.data ?? false) {
+              return SpinPerfect(
+                duration: const Duration(seconds: 20),
+                spins: 10,
+                infinite: true,
+                child: IconButton(
+                  onPressed: () => query = '',
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              );
+            }
+
+            return FadeIn(
+              animate: query.isNotEmpty,
+              duration: const Duration(milliseconds: 200),
+              child: IconButton(
+                onPressed: () => query = '',
+                icon: const Icon(Icons.clear),
+              ),
+            );
+          }),
+    ];
+  }
+```
+
+# Sección 16. ShellRoutes - Go Router - Tabs
+- Se va a dividir en dos secciones.
+- Sección 1.
+  - Recomendación por Go Router.
+    - No preserva el estado de la página.
+    - Se implementa el Shell Route y se le mandan las vistas.
+- Sección 2.
+  - Se implementa keep alive.
+## Temas
+1. Navegación entre trabs.
+2. Preservar el estado.
+3. Go_Router
+  - Redirect
+  - ShellRoute
+  - SubShellRoutes
+
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
@@ -1946,4 +2058,5 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
 - No usar BuildContext across async gaps.
   - Esto sucede que ya que el BuildContext pudo haber cambiado en lo que se espera a que se cumpla la promesa. Por lo que no se recomienda usarlo en showSearch ya que es un Future.
   - Se puede recurrir a then, ya que permite tomar el valor del contexto cuando se ejecutan los bloques de código.
-- Si se realiza un Stream de la forma StreamController() solo va a poder tener un listener. Se pueden tener varios lugares en donde se escuche al Stream, por lo que se puede usar StreamController.broadcast(). Con Broadcast cada que se redibuje el Widget éste se volverá a suscribir al Stream
+- Si se realiza un Stream de la forma StreamController() solo va a poder tener un listener. Se pueden tener varios lugares en donde se escuche al Stream, por lo que se puede usar StreamController.broadcast(). Con Broadcast cada que se redibuje el Widget éste se volverá a suscribir al Stream.
+- Las funciones o métodos que retornan algún Widget no pueden ser asíncronos.
