@@ -2040,6 +2040,102 @@ StreamController<bool> isLoadingStream = StreamController.broadcast();
   - SubShellRoutes
 
 
+## Preparación de vistas
+- Ya se tiene la primera (Home View).
+- Si se navega a favoritos se va a tener otra página, la cual va a ser parcial. Esa página parcial es conocida como View (va a estar dentro de otro Widget).
+  - Una View es un Widget que es similar a un Widget que sea un screen, solo que es parcial.
+- Home_Screen es la pantalla que va a tener los tabs.
+
+1. presentation -> views -> home_views -> favorites_view.dart
+2. presentation -> views -> home_views -> home_view.dart
+  - Se corta de HomeScreen y se pega en home_view.dart
+3. Implementación de enrutamiento en HomeScreen.
+  - Se define una nueva propiedad a HomeScreen.
+    - Es de tipo Widget.
+    - Se llama childView y es lo que se va a mostrar.
+4. Enviar el childView en app_router.
+
+## ShellRoute - GoRouter
+https://pub.dev/documentation/go_router/latest/topics/Configuration-topic.html
+- Se usa el concepto de NestedNavigation
+- ShellRoute es lo mismo que GoRoute pero con características especiales.
+  - Permite pasar el Widget hijo por medio de builder.
+
+``` dart
+  ShellRoute(
+      builder: (context, state, child) {
+        return HomeScreen(
+          childView: child,
+        );
+      },
+      routes: [
+        GoRoute(
+            path: '/',
+            routes: [
+              GoRoute(
+                  path: 'movie/:id',
+                  name: MovieScreen.name,
+                  builder: (context, state) {
+                    final movieId = state.pathParameters['id'] ?? 'no-id';
+                    return MovieScreen(movieId: movieId);
+                  })
+            ],
+            builder: (context, state) {
+              return const HomeView();
+            }),
+        GoRoute(
+            path: '/favorites',
+            builder: (context, state) {
+              return const FavoritesView();
+            }),
+      ])
+```
+
+## Bottom Navigation Bar - Navegación
+- En custom_bottom_navigationbar.dart se establece un método para que según el índice del navegador se pueda usar context.go y especificar la location.
+- Por otro lado, se establece un método para obtener la location actual y poder saber qué index está activo.
+
+``` dart
+class CustomBottomNavigation extends StatelessWidget {
+  const CustomBottomNavigation({super.key});
+
+  int getCurrentIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).matchedLocation;
+    switch (location) {
+      case '/':
+        return 0;
+      case '/categories':
+        return 1;
+      case '/favorites':
+        return 2;
+      default:
+        return 0;
+    }
+  }
+
+  void onItemTapped(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.go('/');
+        break;
+      case 1:
+        context.go('/');
+        break;
+      case 2:
+        context.go('/favorites');
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      onTap: (index) => onItemTapped(context, index),
+      elevation: 0,
+      currentIndex: getCurrentIndex(context),
+      items: const [
+```
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
