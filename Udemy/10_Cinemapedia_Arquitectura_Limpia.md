@@ -2090,7 +2090,7 @@ https://pub.dev/documentation/go_router/latest/topics/Configuration-topic.html
             }),
       ])
 ```
-
+ 
 ## Bottom Navigation Bar - Navegación
 - En custom_bottom_navigationbar.dart se establece un método para que según el índice del navegador se pueda usar context.go y especificar la location.
 - Por otro lado, se establece un método para obtener la location actual y poder saber qué index está activo.
@@ -2134,6 +2134,100 @@ class CustomBottomNavigation extends StatelessWidget {
       elevation: 0,
       currentIndex: getCurrentIndex(context),
       items: const [
+```
+
+## Segunda opción para mantener estado (posición de scroll y momentos de carusel)
+### Preparar vistas
+1. presentation -> views -> movies -> favorites_view.dart
+2. presentation -> views -> movies -> home_view.dart
+
+### Configuración del Router
+- La ruta ahora será home, y espera el parámetro de page.
+- Se define la propiedad int pageIndex en HomeScreen, la cual se le pasará desde go router por medio de params.
+- Por medio de IndexedStack se va a preservar el estado de la view.
+
+``` dart
+class HomeScreen extends StatelessWidget {
+  static const name = 'home_screen';
+  final int pageIndex;
+  const HomeScreen({super.key, required this.pageIndex});
+
+  final viewRoutes = const <Widget>[
+    HomeView(),
+    SizedBox(),
+    FavoritesView(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: pageIndex,
+        children: viewRoutes,
+      ),
+      bottomNavigationBar: CustomBottomNavigation(),
+    );
+  }
+}
+
+```
+
+``` dart
+final appRouter = GoRouter(initialLocation: '/home/0', routes: [
+  GoRoute(
+      path: '/home/:page',
+      name: HomeScreen.name,
+      builder: (context, state) {
+        final pageIndex = state.pathParameters['page'] ?? '0';
+        return HomeScreen(
+          pageIndex: int.parse(pageIndex),
+        );
+      },
+```
+
+### Funcionamiento del bottom navigation bar
+- Desde HomeScreen se va a enviar el index de la view actual.
+- Se usa este parámetro para navegar usando context.go y saber qué opción está seleccionada.
+
+``` dart
+class CustomBottomNavigation extends StatelessWidget {
+  final int currentIndex;
+  const CustomBottomNavigation({super.key, required this.currentIndex});
+
+  void onItemTapped(BuildContext context, int index) {
+    context.go('/home/$index');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      elevation: 0,
+      currentIndex: currentIndex,
+      onTap: (index) => onItemTapped(context, index),
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home_max), label: 'Inicio'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.label_outline), label: 'Categorías'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_outline), label: 'Favoritos'),
+      ],
+    );
+  }
+}
+
+```
+
+### Arreglar rutas
+- Por el momento ya no se puede navegar a las ventansa de pelíuclas,y de ahí regersar a la de home.
+- En GoRouter se usa redirect para la ruta /.
+  - Esto se hace para poder regesar a Home.
+- La navegación de la movie está en movie_horizontal_listview.dart
+
+``` dart
+                    return GestureDetector(
+                      onTap: () => context.push('/home/0/movie/${movie.id}'),
+                      child: child,
+                    );
 ```
 
 # Buenas prácticas y notas
