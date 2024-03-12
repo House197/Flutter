@@ -2230,6 +2230,20 @@ class CustomBottomNavigation extends StatelessWidget {
                     );
 ```
 
+# Sección 17. Local Databases
+## Temas
+1. Base de datos Isar. (https://isar.dev/es/)
+  - Es de tipo NoSQL.
+2. Realizar queries
+3. Almacenar en base de datos
+4. Leer, insertar y borrar
+5. FutureProvider de Riverpod
+6. Y otras cosas relacionadas a su uso.
+
+## Isar Database
+- Entre los usos de una base de datos local es mantener datos sensibles del usuario en el dispositivo, tales como para un hospital.
+  - Por otro lado, sirve para mantener transacciones pendientes en caso de que el internet en el dispositivo no esté presente, permitiendo enviar esos datos al backend una vez que hay conexión a internet.
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
