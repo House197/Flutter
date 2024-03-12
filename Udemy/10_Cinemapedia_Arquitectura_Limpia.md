@@ -2244,6 +2244,58 @@ class CustomBottomNavigation extends StatelessWidget {
 - Entre los usos de una base de datos local es mantener datos sensibles del usuario en el dispositivo, tales como para un hospital.
   - Por otro lado, sirve para mantener transacciones pendientes en caso de que el internet en el dispositivo no esté presente, permitiendo enviar esos datos al backend una vez que hay conexión a internet.
 
+### Instalación
+1. Se instala usar e isar_flutter_libs (no hace falta ahcerlo como lo indica la página https://isar.dev/tutorials/quickstart.html, ya que se puede hacer por pub assyst.)
+  - SE RECOMIENDA INSTALAR POR MEDIO DE COMANDO COMO INDICA LA PÁGINA. IGNORAR LÍNEAS DE ABAJO.
+  - Se debe tener cuidado con pub assyst, ya que se tienen dependencias de producción:  
+    - isar isar_flutter_libs
+  - dependencias de desarrollo:
+    - isar generator
+    - build_runner
+  - Las dependencias que tienen la palabra isar deben ser de la misma versión.
+  - Puede salir un error como el siguiente al instalas las dependencias:
+    - Se debe hbailitar developer mode en Windows en la sección de settings.
+    - Se puede correr el comando start ms-settings:developers para abrir los settings.
+
+``` dart
+packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Building with plugins requires symlink support.
+```
+
+2. Annotate classes
+  - domain -> entities -> movie.dart
+  - Se pide hacer anotaciones con decoradores a las entidades.
+  - part indica que el archuvo está compuesto de otros archivos.
+
+``` dart
+import 'package:isar/isar.dart';
+
+part 'movie.g.dart'; // genera archivo de forma automática
+
+@collection
+class Movie {
+  Id? isarId;
+  final bool adult;
+  final String backdropPath;
+  final List<String> genreIds;
+  final int id;
+  final String originalLanguage;
+  final String originalTitle;
+```
+
+3. Ejecutar comando para verificar los archivos decorados y que tengan .g
+
+``` bash
+flutter pub run build_runner build
+```
+
+## Repositorios y Datasource
+1. domain -> datasource -> local_storage_datasource.dart
+2. domain -> repository -> local_storage_repository.dart
+3. infrastructure -> datasource -> isar_datasource.dart
+4. infrastructure -> datasource -> local_storage_repository_impl.dart
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
