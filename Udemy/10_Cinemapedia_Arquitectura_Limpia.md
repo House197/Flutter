@@ -2243,6 +2243,8 @@ class CustomBottomNavigation extends StatelessWidget {
 ## Isar Database
 - Entre los usos de una base de datos local es mantener datos sensibles del usuario en el dispositivo, tales como para un hospital.
   - Por otro lado, sirve para mantener transacciones pendientes en caso de que el internet en el dispositivo no esté presente, permitiendo enviar esos datos al backend una vez que hay conexión a internet.
+- Después de instalar se debe hacer un stop de la app y volver a levantar.
+- Al hacer una instancia por primera vez se va a tener un link en la consola, el cual va a permitir abrir en el navegador un gestos de la db.
 
 ### Instalación
 1. Se instala usar e isar_flutter_libs (no hace falta ahcerlo como lo indica la página https://isar.dev/tutorials/quickstart.html, ya que se puede hacer por pub assyst.)
@@ -2295,6 +2297,172 @@ flutter pub run build_runner build
 2. domain -> repository -> local_storage_repository.dart
 3. infrastructure -> datasource -> isar_datasource.dart
 4. infrastructure -> datasource -> local_storage_repository_impl.dart
+
+## Isar Datasource Implementation
+- Se define el parámetro db, el cual va a ser late.
+  - Es late ya que se debe esperar a que la base de datos esté lista, por lo que es una tarea asíncrona.
+
+``` dart
+class IsarDatasource extends LocalStorageDatasource {
+  late Future<Isar> db;
+
+  IsarDatasource() {
+    db = openDB();
+  }
+
+  Future<Isar> openDB() async {
+    final dir = await getApplicationDocumentsDirectory();
+
+    if (Isar.instanceNames.isEmpty) {
+      return await Isar.open([MovieSchema],
+          inspector: true, directory: dir.path);
+    }
+
+    return Future.value(Isar.getInstance());
+  }
+```
+
+- El esquema se creó al momento de corre build_runner.
+- Inspector por defecto está en true.
+  - Permite tener un servicio y automáticamente Isar lo va a levantar para poder analizar cómo está la base de datos.
+
+## Implementar métodos necesarios
+- Según la propiedad en el esquema se tienen método como propertyEqualTo().
+- Con ToggleFavorite se lleva a cabo una transacción. 
+  - Una transacción es un trabajo en la base de datos (grabar en la base de datos.)
+
+``` dart
+class IsarDatasource extends LocalStorageDatasource {
+  late Future<Isar> db;
+
+  IsarDatasource() {
+    db = openDB();
+  }
+
+  Future<Isar> openDB() async {
+    final dir = await getApplicationDocumentsDirectory();
+
+    if (Isar.instanceNames.isEmpty) {
+      return await Isar.open([MovieSchema],
+          inspector: true, directory: dir.path);
+    }
+
+    return Future.value(Isar.getInstance());
+  }
+
+  @override
+  Future<bool> isMovieFavorite(int movieId) async {
+    final isar = await db;
+    final Movie? isFavoriteMovie =
+        await isar.movies.filter().idEqualTo(movieId).findFirst();
+
+    return isFavoriteMovie != null;
+  }
+
+  @override
+  Future<List<Movie>> loadMovies({int limit = 10, offset = 0}) async {
+    final isar = await db;
+
+    // Limit sirve para paginación. Si se desea traer de 10 en 10, o 5 en, ...
+    // Offset permite recuperar cuántos de esos 10 después de tantos registros.
+    // Si se desea la primera página entonces sería 0, si fuera 10 entonces se desean los siguientes
+    // 10, si fuera 20 serían los siguientes 10 depsués de esos 20.
+    return isar.movies.where().offset(offset).limit(limit).findAll();
+  }
+
+  @override
+  Future<void> toggleFavorite(Movie movie) async {
+    final isar = await db;
+
+    final favoriteMovie =
+        await isar.movies.filter().idEqualTo(movie.id).findFirst();
+
+    if (favoriteMovie != null) {
+      // Borrar
+      isar.writeTxnSync(() => isar.movies.deleteSync(favoriteMovie.isarId!));
+    }
+
+    // Insertar
+    isar.writeTxnSync(() => isar.movies.putSync(movie));
+  }
+}
+```
+
+## Provider y grabación en base de datos
+1. presentation -> providers -> storage -> local_storage_provider.dart
+``` dart
+final localStorageRepositoryProvider = Provider((ref) {
+  return LocalStorageRepositoryImpl(datasource: IsarDatasource());
+});
+```
+2. Llamar método de toggleMovie en movie_Screen.dart.
+  - Llamar tambien ref.invalidate, para que vuelva a hacer la petición y confirme. De lo contrario no se aprecia el cambio de icono debido a que la data puede no cambiar.
+    - Esto permite invalidar el provider. Esto invalida el estado del provider y lo regresa a su estado original.
+      - El estado inicial de un FutureProvider es que todavía no se resuelve, por lo que conlleva a que vuelva a hacer la petición.
+``` dart
+actions: [
+        IconButton(
+            onPressed: () {
+              ref.watch(localStorageRepositoryProvider).toggleFavorite(movie);
+              ref.invalidate(isFavoriteProvider(movie.id));
+            },
+            icon: Icon(Icons.favorite_border))
+      ],
+```
+
+## Future Provider - Family modifier
+- Marcar corazón en rojo (conmutar con otro icono)
+
+### Modifier
+#### autoDispose
+- Si se utiliza un provider (ConsumerWidget por ejemplo, en donde por ejemplo se utiliza solo en ese Widget el provider), cuando se cierra y destruye el widget entonces deja al provider en su estado inicial.
+
+``` dart
+final provider = Provider.autoDispose((ref) => algo)
+```
+
+#### Family
+- Permite recibir un argumento, al cual se le define su tipo de dato.
+
+``` dart
+final provider = Provider.family((ref, arg) => algo)
+```
+
+### Corazón, FutureProvider
+- Ya que solo se ocupa el widget de localStorage en la pantalla de movie para cambiar el ícono de corazón, se crea un provider que retorna un booleano.
+  - Se puede colocar en cualquier archivo, pero se coloca en movie_screen.
+  - Va a ser un Future que retorna un booleano.
+- FutureProvider sirve para cuando se tiene alguna tarea asíncrona.
+- Se va a mezlcar con family para poder recibir el argumento de movieId. Se llama al provider del repositorio para poder hacer query en la base de datos y ver si la películas está en favorito.
+  - Por otro lado se coloca también autoDispose para que cuando se cierre el Widget se coloca al provider en su estado inicial, el cual es una Future que no está resuelto, lo que provocará que haga la petición en base de datos para ver qué estado debe tener.
+
+``` dart
+final isFavoriteProvider = FutureProvider.family((ref, int movieId) {
+  final localStorageRepository = ref.watch(localStorageRepositoryProvider);
+  return localStorageRepository.isMovieFavorite(movieId);
+});
+
+```
+
+- Se crea la instancia del FutureProvider en la función Build.
+
+``` dart
+final isFavoriteProvider = FutureProvider.family((ref, int movieId) {
+  final localStorageRepository = ref.watch(localStorageRepositoryProvider);
+  return localStorageRepository.isMovieFavorite(movieId);
+});
+
+class _CustomSliverAppBar extends ConsumerWidget {
+  final Movie movie;
+  const _CustomSliverAppBar({required this.movie});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFavoriteFuture = ref.watch(isFavoriteProvider(movie.id));
+```
+
+- Se usa el helper method when en la instancia, la cual se usa en la sección de icon.
+  - Este método permite manejar los escenarios de cuando la data está cargando, cuando ya se tiene la data o cuando hubo un error.
 
 # Buenas prácticas y notas
 - Las importaciones importan.

@@ -2,6 +2,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:cinemapedia/domain/entities/movie.dart';
 import 'package:cinemapedia/presentation/providers/actors/actors_by_movie_provider.dart';
 import 'package:cinemapedia/presentation/providers/movies/movie_info_provider.dart';
+import 'package:cinemapedia/presentation/providers/storage/local_storage_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -104,7 +105,8 @@ class _MovieDetails extends StatelessWidget {
                     margin: const EdgeInsets.only(right: 10),
                     child: Chip(
                       label: Text(genre),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
                     ),
                   ))
             ],
@@ -140,52 +142,78 @@ class _ActorsByMovie extends ConsumerWidget {
             return Container(
               padding: const EdgeInsets.all(8.0),
               width: 135,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                FadeInRight(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.network(
-                      actor.profilePath,
-                      height: 180,
-                      width: 135,
-                      fit: BoxFit.cover,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FadeInRight(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          actor.profilePath,
+                          height: 180,
+                          width: 135,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  actor.name,
-                  maxLines: 2,
-                ),
-                Text(
-                  actor.character ?? '',
-                  maxLines: 2,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ]),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    Text(
+                      actor.name,
+                      maxLines: 2,
+                    ),
+                    Text(
+                      actor.character ?? '',
+                      maxLines: 2,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ]),
             );
           },
         ));
   }
 }
 
-class _CustomSliverAppBar extends StatelessWidget {
+final isFavoriteProvider =
+    FutureProvider.family.autoDispose((ref, int movieId) {
+  final localStorageRepository = ref.watch(localStorageRepositoryProvider);
+  return localStorageRepository.isMovieFavorite(movieId);
+});
+
+class _CustomSliverAppBar extends ConsumerWidget {
   final Movie movie;
   const _CustomSliverAppBar({required this.movie});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFavoriteFuture = ref.watch(isFavoriteProvider(movie.id));
     final size = MediaQuery.of(context).size;
     return SliverAppBar(
       backgroundColor: Colors.black,
       expandedHeight: size.height * 0.7,
       foregroundColor: Colors.white,
-      actions: [IconButton(onPressed: () {}, icon: Icon(Icons.favorite_border))],
+      actions: [
+        IconButton(
+            onPressed: () {
+              ref.watch(localStorageRepositoryProvider).toggleFavorite(movie);
+              ref.invalidate(isFavoriteProvider(movie.id));
+            },
+            icon: isFavoriteFuture.when(
+                data: (isFavorite) => isFavorite
+                    ? const Icon(
+                        Icons.favorite_rounded,
+                        color: Colors.red,
+                      )
+                    : const Icon(Icons.favorite_border),
+                error: (_, __) => throw UnimplementedError(),
+                loading: () => const CircularProgressIndicator(
+                      strokeWidth: 2,
+                    )))
+      ],
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         //title: Text(
@@ -206,9 +234,15 @@ class _CustomSliverAppBar extends StatelessWidget {
               ),
             ),
             const _CustomGradient(
-                stops: [0.7, 1.0], colors: [Colors.transparent, Colors.black87], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                stops: [0.7, 1.0],
+                colors: [Colors.transparent, Colors.black87],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter),
             const _CustomGradient(
-                stops: [0.7, 1.0], colors: [Colors.transparent, Colors.black87], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                stops: [0.7, 1.0],
+                colors: [Colors.transparent, Colors.black87],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter),
             const _CustomGradient(
               stops: [0.0, 0.3],
               colors: [Colors.black87, Colors.transparent],
@@ -234,7 +268,11 @@ class _CustomGradient extends StatelessWidget {
   final List<Color> colors;
   final AlignmentGeometry begin;
   final AlignmentGeometry end;
-  const _CustomGradient({required this.stops, required this.colors, this.begin = Alignment.centerLeft, this.end = Alignment.centerRight});
+  const _CustomGradient(
+      {required this.stops,
+      required this.colors,
+      this.begin = Alignment.centerLeft,
+      this.end = Alignment.centerRight});
 
   @override
   Widget build(BuildContext context) {
