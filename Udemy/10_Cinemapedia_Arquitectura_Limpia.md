@@ -2464,6 +2464,93 @@ class _CustomSliverAppBar extends ConsumerWidget {
 - Se usa el helper method when en la instancia, la cual se usa en la sección de icon.
   - Este método permite manejar los escenarios de cuando la data está cargando, cuando ya se tiene la data o cuando hubo un error.
 
+
+
+## Favorite MoviesProvider
+1. presentation -> providers .> storage -> favorite_movies_provider.dart
+  - En el StateNotifier se necesita de una forma para cargar las siguientes película, así como para hacer toggle y todo lo demás.
+    - Se le puede mandar los casos de usos directamente que están en el provider del repositorio localStorage RepositoryProvider.
+    - Se hace de manera diferente.
+
+``` dart
+final favoriteMoviesProvider = StateNotifierProvider<StorageMoviesNotifier, Map<int, Movie>>((ref) {
+  final localStorageRepository = ref.watch(localStorageRepositoryProvider);
+  return StorageMoviesNotifier(localStorageRepository: localStorageRepository);
+});
+
+/*
+{
+  132: Movie,
+  1234: Movie,
+}
+*/
+
+class StorageMoviesNotifier extends StateNotifier<Map<int, Movie>> {
+  int page = 0;
+  final LocalStorageRepository localStorageRepository;
+  StorageMoviesNotifier({required this.localStorageRepository}) : super({});
+
+  Future<void> loadNextPage() async {
+    final movies = await localStorageRepository.loadMovies(offset: page * 10);
+    page++;
+
+    final tempMoviesMap = <int, Movie>{};
+    for (final movie in movies) {
+      tempMoviesMap[movie.id] = movie;
+    }
+
+    state = {...state, ...tempMoviesMap};
+
+    //return movies; puede que se requiera la referencia a las movies en un futuro.
+  }
+}
+```
+
+## Mostrar películas favoritas
+- Se realiza en favorites_view.dart
+  - Por el momento no se actualiza en tiempo real.
+
+### StaggeredGridView, MasonryGridView
+1. Instalar paquete. https://pub.dev/packages/flutter_staggered_grid_view
+2. presentation -> views -> widgets -> movies -> movie_masonry.dart
+  - Ya que se sabe de antemano que se va a querer implementar infinite scroll se va a utilizar un controller, por lo que de inicio se crea el stateful widget.
+
+### Infinite Scroll
+1. Ubicarse en favorites_view.dart
+2. Definir propiedades isLastPage e isLoading.
+3. Definir función loadNextPage.
+
+``` dart
+class _FavoritesViewState extends ConsumerState<FavoritesView> {
+  bool isLoading = false;
+  bool isLastPage = false;
+  @override
+  void initState() {
+    super.initState();
+    loadNextPage();
+  }
+
+  void loadNextPage() async {
+    if (isLoading || isLastPage) return;
+    isLoading = true;
+
+    final movies = await ref.watch(favoriteMoviesProvider.notifier).loadNextPage();
+    isLoading = false;
+
+    if (movies.isEmpty) {
+      isLastPage = true;
+    }
+  }
+```
+
+4. Pasar referencia de loadNextPage a MovieMasonry.
+5. Ubicarse en movie_masonry.dart
+6. Definir variable asignado ScrollController.
+7. Agregarle addListener a scrollController en initState.
+  1. Colocar condición en función del scroll actual para llamar petición, la cual se realiza por medio del callback que se pasa como parámetro.
+8. Borrar Scroll cada en dispose.
+9. Ligar variable de controlador con el Widget deseado por medio del campo controller (si es que el widget admite el campo).
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
@@ -2484,3 +2571,7 @@ class _CustomSliverAppBar extends ConsumerWidget {
   - Se puede recurrir a then, ya que permite tomar el valor del contexto cuando se ejecutan los bloques de código.
 - Si se realiza un Stream de la forma StreamController() solo va a poder tener un listener. Se pueden tener varios lugares en donde se escuche al Stream, por lo que se puede usar StreamController.broadcast(). Con Broadcast cada que se redibuje el Widget éste se volverá a suscribir al Stream.
 - Las funciones o métodos que retornan algún Widget no pueden ser asíncronos.
+
+- Usar READ de ref en un initState.
+  - Se coloca notifier en el provider si se deseaz acceso al notifier, de lo contrario se da acceso al estado.
+  - Al usar indexedStack se crean los widgets que se tengan en viewRoutes de forma simultanea (home_screen.dart).
