@@ -2551,6 +2551,73 @@ class _FavoritesViewState extends ConsumerState<FavoritesView> {
 8. Borrar Scroll cada en dispose.
 9. Ligar variable de controlador con el Widget deseado por medio del campo controller (si es que el widget admite el campo).
 
+### BUG
+- En la función de loadNextPage necesita el parámetro limit, el ucal se definió en domain del datasource.
+  - En un principio MovieMasonry cuenta con 10 películas, ya que por defecto limit está en 10. Sin embargo, en la aplicación estas 10 películas caben perfectamente en la pantalla, por lo que no se puede hacer scroll, por consiguiente no se llama a infinite scroll. Se debe ajustar el número de películas para que haya presente un scroll.
+
+### Dinámicamente remover y agregar elementos
+1. Crear método toggleFavorite() en favorite_movies_provider.dart
+  - Queda pendiente solventar el error de recuperar el valor desde toggleFavorite (por el momento reotrna void), ya que en el estado solo se tiene un sección de las películas por la paginación, lo que conlleva a que pueda haber un error de que la película sí esté en favorito pero no está presente actualmente en el state hasta que se haga scroll y se traigan más películas.
+
+``` dart
+class StorageMoviesNotifier extends StateNotifier<Map<int, Movie>> {
+  int page = 0;
+  final LocalStorageRepository localStorageRepository;
+  StorageMoviesNotifier({required this.localStorageRepository}) : super({});
+
+  Future<List<Movie>> loadNextPage() async {
+    final movies = await localStorageRepository.loadMovies(offset: page * 10, limit: 12);
+    page++;
+
+    final tempMoviesMap = <int, Movie>{};
+    for (final movie in movies) {
+      tempMoviesMap[movie.id] = movie;
+    }
+
+    state = {...state, ...tempMoviesMap};
+
+    return movies;
+  }
+
+  Future<void> toggleFavorite(Movie movie) async {
+    await localStorageRepository.toggleFavorite(movie);
+    final bool isMovieFavorite = state[movie.id] != null;
+
+    if (isMovieFavorite) {
+      state.remove(movie.id);
+      state = {...state};
+    } else {
+      state = {...state, movie.id: movie};
+    }
+  }
+}
+
+```
+
+2. Llamar el método creado en movie_screen.dart desde este provider y no desde el repositoryProvider.
+
+``` dart
+            onPressed: () async {
+              //await ref.read(localStorageRepositoryProvider).toggleFavorite(movie);
+              await ref.read(favoriteMoviesProvider.notifier).toggleFavorite(movie);
+              ref.invalidate(isFavoriteProvider(movie.id));
+            },
+```
+
+#### BUG
+- En el código anterior de la llamada de toggle es un código asíncrono, por lo que se debe llamar await en la función de toggle antes de invalidarlo.
+- Por otro lado, se debe usar ref.read en lugar de ref.watch.
+
+## Popular Movies
+1. presentation -> views -> movies -> popular_view.dart
+2. presentation -> providers -> movies -> movies_provider.dart
+  1. Crear el provider popularMoviesProvider (ya está hecho).
+3. Agregar View en home_screen.
+
+## Bug de llamar varias peticiones en infiniteScroll
+-  Esto sucedía porque el widget que se renderizaba con contaba con algún tamaño, por lo que empezava con un tamaño pequeño lo que provocaba la condición del scroll actual siguiera cumpliendo con la condición de ser mayor que el maxextent debido al umbral. Se debe especificar un tamaño por defecto al widget que se renderiza para que el masonry coloque esos widgets en la pantalla y extienda el scroll, evitando que se hagan múltiples peticiones.
+  - Esto solo se aplicó para popularMovies, falta implementarlo en favoritos.
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
