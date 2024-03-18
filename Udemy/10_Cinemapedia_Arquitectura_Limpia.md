@@ -2464,6 +2464,160 @@ class _CustomSliverAppBar extends ConsumerWidget {
 - Se usa el helper method when en la instancia, la cual se usa en la sección de icon.
   - Este método permite manejar los escenarios de cuando la data está cargando, cuando ya se tiene la data o cuando hubo un error.
 
+
+
+## Favorite MoviesProvider
+1. presentation -> providers .> storage -> favorite_movies_provider.dart
+  - En el StateNotifier se necesita de una forma para cargar las siguientes película, así como para hacer toggle y todo lo demás.
+    - Se le puede mandar los casos de usos directamente que están en el provider del repositorio localStorage RepositoryProvider.
+    - Se hace de manera diferente.
+
+``` dart
+final favoriteMoviesProvider = StateNotifierProvider<StorageMoviesNotifier, Map<int, Movie>>((ref) {
+  final localStorageRepository = ref.watch(localStorageRepositoryProvider);
+  return StorageMoviesNotifier(localStorageRepository: localStorageRepository);
+});
+
+/*
+{
+  132: Movie,
+  1234: Movie,
+}
+*/
+
+class StorageMoviesNotifier extends StateNotifier<Map<int, Movie>> {
+  int page = 0;
+  final LocalStorageRepository localStorageRepository;
+  StorageMoviesNotifier({required this.localStorageRepository}) : super({});
+
+  Future<void> loadNextPage() async {
+    final movies = await localStorageRepository.loadMovies(offset: page * 10);
+    page++;
+
+    final tempMoviesMap = <int, Movie>{};
+    for (final movie in movies) {
+      tempMoviesMap[movie.id] = movie;
+    }
+
+    state = {...state, ...tempMoviesMap};
+
+    //return movies; puede que se requiera la referencia a las movies en un futuro.
+  }
+}
+```
+
+## Mostrar películas favoritas
+- Se realiza en favorites_view.dart
+  - Por el momento no se actualiza en tiempo real.
+
+### StaggeredGridView, MasonryGridView
+1. Instalar paquete. https://pub.dev/packages/flutter_staggered_grid_view
+2. presentation -> views -> widgets -> movies -> movie_masonry.dart
+  - Ya que se sabe de antemano que se va a querer implementar infinite scroll se va a utilizar un controller, por lo que de inicio se crea el stateful widget.
+
+### Infinite Scroll
+1. Ubicarse en favorites_view.dart
+2. Definir propiedades isLastPage e isLoading.
+3. Definir función loadNextPage.
+
+``` dart
+class _FavoritesViewState extends ConsumerState<FavoritesView> {
+  bool isLoading = false;
+  bool isLastPage = false;
+  @override
+  void initState() {
+    super.initState();
+    loadNextPage();
+  }
+
+  void loadNextPage() async {
+    if (isLoading || isLastPage) return;
+    isLoading = true;
+
+    final movies = await ref.watch(favoriteMoviesProvider.notifier).loadNextPage();
+    isLoading = false;
+
+    if (movies.isEmpty) {
+      isLastPage = true;
+    }
+  }
+```
+
+4. Pasar referencia de loadNextPage a MovieMasonry.
+5. Ubicarse en movie_masonry.dart
+6. Definir variable asignado ScrollController.
+7. Agregarle addListener a scrollController en initState.
+  1. Colocar condición en función del scroll actual para llamar petición, la cual se realiza por medio del callback que se pasa como parámetro.
+8. Borrar Scroll cada en dispose.
+9. Ligar variable de controlador con el Widget deseado por medio del campo controller (si es que el widget admite el campo).
+
+### BUG
+- En la función de loadNextPage necesita el parámetro limit, el ucal se definió en domain del datasource.
+  - En un principio MovieMasonry cuenta con 10 películas, ya que por defecto limit está en 10. Sin embargo, en la aplicación estas 10 películas caben perfectamente en la pantalla, por lo que no se puede hacer scroll, por consiguiente no se llama a infinite scroll. Se debe ajustar el número de películas para que haya presente un scroll.
+
+### Dinámicamente remover y agregar elementos
+1. Crear método toggleFavorite() en favorite_movies_provider.dart
+  - Queda pendiente solventar el error de recuperar el valor desde toggleFavorite (por el momento reotrna void), ya que en el estado solo se tiene un sección de las películas por la paginación, lo que conlleva a que pueda haber un error de que la película sí esté en favorito pero no está presente actualmente en el state hasta que se haga scroll y se traigan más películas.
+
+``` dart
+class StorageMoviesNotifier extends StateNotifier<Map<int, Movie>> {
+  int page = 0;
+  final LocalStorageRepository localStorageRepository;
+  StorageMoviesNotifier({required this.localStorageRepository}) : super({});
+
+  Future<List<Movie>> loadNextPage() async {
+    final movies = await localStorageRepository.loadMovies(offset: page * 10, limit: 12);
+    page++;
+
+    final tempMoviesMap = <int, Movie>{};
+    for (final movie in movies) {
+      tempMoviesMap[movie.id] = movie;
+    }
+
+    state = {...state, ...tempMoviesMap};
+
+    return movies;
+  }
+
+  Future<void> toggleFavorite(Movie movie) async {
+    await localStorageRepository.toggleFavorite(movie);
+    final bool isMovieFavorite = state[movie.id] != null;
+
+    if (isMovieFavorite) {
+      state.remove(movie.id);
+      state = {...state};
+    } else {
+      state = {...state, movie.id: movie};
+    }
+  }
+}
+
+```
+
+2. Llamar el método creado en movie_screen.dart desde este provider y no desde el repositoryProvider.
+
+``` dart
+            onPressed: () async {
+              //await ref.read(localStorageRepositoryProvider).toggleFavorite(movie);
+              await ref.read(favoriteMoviesProvider.notifier).toggleFavorite(movie);
+              ref.invalidate(isFavoriteProvider(movie.id));
+            },
+```
+
+#### BUG
+- En el código anterior de la llamada de toggle es un código asíncrono, por lo que se debe llamar await en la función de toggle antes de invalidarlo.
+- Por otro lado, se debe usar ref.read en lugar de ref.watch.
+
+## Popular Movies
+1. presentation -> views -> movies -> popular_view.dart
+2. presentation -> providers -> movies -> movies_provider.dart
+  1. Crear el provider popularMoviesProvider (ya está hecho).
+3. Agregar View en home_screen.
+
+## Bug de llamar varias peticiones en infiniteScroll
+-  Esto sucedía porque el widget que se renderizaba con contaba con algún tamaño, por lo que empezava con un tamaño pequeño lo que provocaba la condición del scroll actual siguiera cumpliendo con la condición de ser mayor que el maxextent debido al umbral. Se debe especificar un tamaño por defecto al widget que se renderiza para que el masonry coloque esos widgets en la pantalla y extienda el scroll, evitando que se hagan múltiples peticiones.
+  - Esto solo se aplicó para popularMovies, falta implementarlo en favoritos.
+
 # Buenas prácticas y notas
 - Las importaciones importan.
     - Primero deben estar las de dart.
@@ -2484,3 +2638,7 @@ class _CustomSliverAppBar extends ConsumerWidget {
   - Se puede recurrir a then, ya que permite tomar el valor del contexto cuando se ejecutan los bloques de código.
 - Si se realiza un Stream de la forma StreamController() solo va a poder tener un listener. Se pueden tener varios lugares en donde se escuche al Stream, por lo que se puede usar StreamController.broadcast(). Con Broadcast cada que se redibuje el Widget éste se volverá a suscribir al Stream.
 - Las funciones o métodos que retornan algún Widget no pueden ser asíncronos.
+
+- Usar READ de ref en un initState.
+  - Se coloca notifier en el provider si se deseaz acceso al notifier, de lo contrario se da acceso al estado.
+  - Al usar indexedStack se crean los widgets que se tengan en viewRoutes de forma simultanea (home_screen.dart).
