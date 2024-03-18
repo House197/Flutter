@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "535425469861",
+    "project_id": "flutter-projects-2768a",
+    "storage_bucket": "flutter-projects-2768a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:535425469861:android:59f097dd0d9fc44ae62c4c",
+        "android_client_info": {
+          "package_name": "com.arturorivera.push_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZzpsKdNlWVD3t6wKWqUg-qVsxjzuNN4o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
