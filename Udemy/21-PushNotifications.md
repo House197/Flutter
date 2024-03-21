@@ -247,6 +247,341 @@ class NotificationStatusChanged extends NotificationsEvent {
   }
 ```
 
+## Token del dispositivo y determinar permiso actual
+- Cuando la app se lanza por primera vez se va a tener notDetermined la autorización.
+1. Se crea método notifications_bloc llamado _initialStatusCheck.
+  - Se invoca después de que se crean los listeners de eventos.
+  - Toma la instancia de messaging para obtener los settings de notificación y ver el status.
+``` dart
+  NotificationsBloc() : super(const NotificationsState()) {
+    on<NotificationStatusChanged>(_notificationStatusChanged);
+
+    _initialStatusCheck();
+  }
+
+  void _initialStatusCheck() async {
+    final settings = await messaging.getNotificationSettings();
+    add(NotificationStatusChanged(settings.authorizationStatus)); // Síncrono
+  }
+```
+2. Obtener el token cuando se tiene permiso autorizado.
+  - Se crea el método _getFCMToken y se invoca en _initialStatusCheck, en donde el cambio de estado es síncrono, por lo que se puede invocar al final del código sin problema.
+  - Por otro lado, se prefiere invocar este método cuando el status cambia.
+
+``` dart
+  void _notificationStatusChanged(NotificationStatusChanged event, Emitter<NotificationsState> emit) {
+    emit(state.copyWith(status: event.status));
+    _getFCMToken();
+  }
+
+  void _getFCMToken() async {
+    //final settings = await messaging.getNotificationSettings();
+    //if(settings.authorizationStatus != AuthorizationStatus.authorized) return;
+    if (state.status != AuthorizationStatus.authorized) return;
+
+    final token = await messaging.getToken();
+    print(token);
+  }
+```
+
+## Escuchar mensajes Push
+- Con el token se tiene el identificador único del dispositivo para recibir pushes.
+- Con la versión de Flutter mayo a 1.12 ya no se debe hacer la parte de Android Integration, por lo que se prosigue a la sección de Cloaud Messaging -> Usage de la documentación de Firebase. https://firebase.flutter.dev/docs/messaging/usage
+- En la docuementación se mencionan tres estados:
+  - Foreground. El usuario tiene la app abierta y usando.
+  - Backround. El usuario tiene l aplicación abierta pero en el fondo (minimizada).
+  - Terminated. El dispositivo está bloqueado o la aplicación on está corriendo.
+
+### Foreground messages
+- Se crea método en notificactions_bloc _handleRemoteMessage.
+  - Esto es un listener que se debe escuchar, lo cual se hace con otro método llamado _onForegroundMessage.
+- _onForegroundMessage va a ser un Stream, por lo que solo se debe inicializar una vez.
+  - No se va a limpiar el listener ya que siempre se quiere escuchar mientras la app esté corriendo.
+  - Se inicializa una única vez por medio de llamarlo cuando se inicializa la app.
+
+``` dart
+  NotificationsBloc() : super(const NotificationsState()) {
+    on<NotificationStatusChanged>(_notificationStatusChanged);
+
+    _initialStatusCheck();
+    _onForegroundMessage();
+  }
+
+
+ void _handleRemoteMessage(RemoteMessage message) {
+    print('Got a message whilst in the foreground!');
+    print('Message data: ${message.data}');
+
+    if (message.notification == null) return;
+
+    print('Message also contained a notification: ${message.notification}');
+  }
+
+  void _onForegroundMessage(){
+    FirebaseMessaging.onMessage.listen(_handleRemoteMessage);
+  }
+```
+
+### Recibbir primera notificación Push
+1. Se va al proyecto creado en Firebase.
+2. Ir a sección de Participación en el menú de nevagación izquierdo.
+3. Selecciona Messaging.
+4. Hcaer click en crear primera campaña.
+5. Escoger opción Mensaes de Firebase Notifications.
+6. Llenar campos de formulario.
+  - La imagen debe ser menor a 300KB
+7. Abrir sección de Orientación para hacer mensajes de prueba.
+  - Se escoge la app deseada en el dropdown que aparece.
+8. Sección de Programación, seleccionar que se desea ahora la notificación.
+9. Sección Opciones adicionales.
+  - Canal de Android ya está establecido en Firebase.
+  - En las claves es usual colocar con notifications push uno de tipo type con un valor de chat.
+    - De igual manera se tiene un campo de id con un valor específico, tal como el id de un usuario al que se desea mandar la notificación.
+10. Guardar como borrador, no seleccionar revisar.
+  - Seleccionar mensaje y editar.
+  - De vuelta en la primera sección 'Notificación' del formulario se prueba esto con el botón de 'Enviar mensaje de prueba'. Se debe usar el token generado.
+
+## Notificaciones cuando app está terminada
+- Al tener la app en background se recomienda ir guardando las notificaciones en bsae de datos para que cuando el usuario vuelva a ingresar se muestren.
+1. Buscar sección de Background messages. https://firebase.flutter.dev/docs/messaging/usage
+  - There are a few things to keep in mind about your background message handler:
+    - It must not be an anonymous function.
+    - It must be a top-level function (e.g. not a class method which requires initialization).
+    
+    - Since the handler runs in its own isolate outside your applications context, it is not possible to update application state or execute any UI impacting logic. You can, however, perform logic such as HTTP requests, perform IO operations (e.g. updating local storage), communicate with other plugins etc.
+
+    - It is also recommended to complete your logic as soon as possible. Running long, intensive tasks impacts device performance and may cause the OS to terminate the process. If tasks run for longer than 30 seconds, the device may automatically kill the process.
+
+2. Colocar implementación en top_level de notifications_bloc.dart
+``` dart
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+  await Firebase.initializeApp();
+
+  print("Handling a background message: ${message.messageId}");
+}
+
+class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  NotificationsBloc() : super(const NotificationsState()) {
+    on<NotificationStatusChanged>(_notificationStatusChanged);
+```
+
+3. Invocar función onBackgroundMessage en main.dart
+
+``` dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  await NotificationsBloc.initializeFCM();
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => NotificationsBloc()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+```
+
+4. Terminar la aplicación al cerrarla en el dispositivo.
+5. Mandar otra notificación, la cual se recibe en las notificaciones del dispositivo.
+
+## Entidad para el manejo de notificaciones
+- Sirve como una capa de seguridad para manejar las notificaciones recibidas de la misma manera sin importar si son notificaciones web, android o iOS.
+1. domain -> entities -> push_message.dart
+  - No se le coloca el nombre de notification, ya que hay modelos de Firebase que pueden tener ese nombre.
+
+``` dart
+class PushMessage {
+  final String messageId;
+  final String title;
+  final String body;
+  final DateTime sentDate;
+  final Map<String, dynamic>? data;
+  final String? imageUrl;
+
+  PushMessage({
+    required this.messageId,
+    required this.title,
+    required this.body,
+    required this.sentDate,
+    this.data,
+    this.imageUrl,
+  });
+
+  @override
+  String toString() {
+    return ''' 
+    PushMessage - 
+id: $messageId
+title: $title
+body: $body
+sentDate: $sentDate
+data: $data
+imageUrl: $imageUrl
+    ''';
+  }
+}
+```
+
+2. Se coloca esta entidad en notifications_state.dart como el tipo de la lista que retorna el estado.
+
+``` dart
+part of 'notifications_bloc.dart';
+
+class NotificationsState extends Equatable {
+  final AuthorizationStatus status;
+
+  final List<PushMessage> notifications;
+
+  const NotificationsState({
+    this.status = AuthorizationStatus.notDetermined,
+    this.notifications = const [],
+  });
+
+  NotificationsState copyWith({
+    AuthorizationStatus? status,
+    List<PushMessage>? notifications,
+  }) =>
+      NotificationsState(
+        status: status ?? this.status,
+        notifications: notifications ?? this.notifications,
+      );
+  @override
+  List<Object> get props => [status, notifications];
+}
+```
+
+3. Implementar en _handleRemoteMessage en notifications_bloc.dart para convertir remoteMessage en el PushMessage que necesita la app.
+  1. Revisar si messageId no es nulo y darle formato, ya que contiene carácteres inválidos como : y %, los cuales pueden rompler el sistema de go_router.
+
+``` dart
+  void _handleRemoteMessage(RemoteMessage message) {
+    if (message.notification == null) return;
+
+    final notification = PushMessage(
+      messageId: message.messageId?.replaceAll(':', '').replaceAll('%', '') ?? '',
+      title: message.notification!.title ?? '',
+      body: message.notification!.body ?? '',
+      sentDate: message.sentTime ?? DateTime.now(),
+      data: message.data,
+      imageUrl: Platform.isAndroid ? message.notification!.android?.imageUrl : message.notification!.apple?.imageUrl,
+    );
+
+    print(notification);
+  }
+
+```
+
+## Actualizar estado con la nueva notificación
+1. Crear evento NotificactoinReceived en notifications_event.dart con argumento PushMessage.
+``` dart
+class NotificationReceived extends NotificationsEvent {
+  final PushMessage pushMessage;
+
+  NotificationReceived(this.pushMessage);
+}
+```
+2. Disparar evento, el cual debe ser cuando se recibe una nueva notificación y se utiliza para crear una instancia de PushMessage.
+``` dart
+  void _handleRemoteMessage(RemoteMessage message) {
+    if (message.notification == null) return;
+
+    final notification = PushMessage(
+      messageId: message.messageId?.replaceAll(':', '').replaceAll('%', '') ?? '',
+      title: message.notification!.title ?? '',
+      body: message.notification!.body ?? '',
+      sentDate: message.sentTime ?? DateTime.now(),
+      data: message.data,
+      imageUrl: Platform.isAndroid ? message.notification!.android?.imageUrl : message.notification!.apple?.imageUrl,
+    );
+
+    add(NotificationReceived(notification));
+  }
+```
+3. Crear listener _onPushMessageReceived en notifications_bloc.dart para reaccionar al evento. En el evento se va a cambiar las notifications del estado.
+``` dart
+  void _onPushMessageReceived(NotificationReceived event, Emitter<NotificationsState> emit) {
+    emit(state.copyWith(notifications: [event.pushMessage, ...state.notifications]));
+  }
+```
+4. Agregar listener al evento en notifications_bloc.dart
+``` dart
+  NotificationsBloc() : super(const NotificationsState()) {
+    on<NotificationStatusChanged>(_notificationStatusChanged);
+    on<NotificationReceived>(_onPushMessageReceived);
+
+    // Verificar estado de las notificaciones
+    _initialStatusCheck();
+
+    // Listener para notificaciones en Foreground
+    _onForegroundMessage();
+```
+4. Probar en home_screen.dart
+  1. Esuchar al estado de NotificationBloc.
+``` dart
+class _HomeView extends StatelessWidget {
+  const _HomeView();
+
+  @override
+  Widget build(BuildContext context) {
+    final notifications = context.watch<NotificationsBloc>().state.notifications;
+    return ListView.builder(
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          final notification = notifications[index];
+          return ListTile(
+            title: Text(notifications[index].title),
+            subtitle: Text(notification.body),
+            leading: notification.imageUrl != null ? Image.network(notification.imageUrl!) : null,
+          );
+        });
+  }
+}
+```
+
+## Segunda pantalla - Información de la notificación
+1. presentation -> screens -> - detail_screen.dart
+2. Se va a crear un nuevo método en notifications_bloc.dart para recuperar notificaciones si es que hay.
+  - Se coloca acá porque es posible que más adelante se requiera usar el método en otros lugares de la app.
+``` dart
+  PushMessage? getMessageById(String pushMessageId) {
+    final exist = state.notifications.any((element) => element.messageId == pushMessageId);
+    if (!exist) return null;
+
+    return state.notifications.firstWhere((element) => element.messageId == pushMessageId);
+  }
+```
+3. Navegación a la pantalla.
+  1. Crear ruta en go_router
+  2. Colocar onTap en ListTile en home_screen, el cual representa a la notificación por el momento.
+``` dart
+    GoRoute(
+      path: '/push-details/:messageId',
+      builder: (context, state) => DetailsScreen(
+        pushMessageId: state.pathParameters['messageID'] ?? '',
+      ),
+    ),
+```
+
+## Manejar interacciones con las notificaciones
+- Se desea que cuando la app esté en bakground y lleguen las notificaciones en el menú del dipositivo, al hacer click sobre la notificación lleve a la ventana de la notificaicón y no solo abrá la app y muestre el home_screen.dart
+- En la documentación oficial -> Cloud Messaging -> Notifications, en la sección de Handling Interaction. https://firebase.flutter.dev/docs/messaging/notifications
+
+1. Crear stateful widget llamado HandleNotificationInteractions el final de main.dart.
+  - Recibe un widget y lo retorna.
+2. Colocar builder
+
+
+
+
+
 # Notas
 ## context.read
 - Se usa en método porque no se desea redibujar en un onPressed.
+## Tokens
+- En el Backend se pueden guardar los diferentes tokens que un usuario guarda para poder mandarles notificaciones a los dispositivos que tiene.

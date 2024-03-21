@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:push_app/config/router/app_router.dart';
@@ -6,6 +7,7 @@ import 'package:push_app/presentation/blocs/bloc/notifications_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await NotificationsBloc.initializeFCM();
   runApp(
     MultiBlocProvider(
@@ -117,5 +119,20 @@ class _MyHomePageState extends State<MyHomePage> {
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+}
+
+class HandleNotificationInteraction extends StatefulWidget {
+  final Widget child;
+  const HandleNotificationInteraction({super.key, required this.child});
+
+  @override
+  State<HandleNotificationInteraction> createState() => _HandleNotificationInteractionState();
+}
+
+class _HandleNotificationInteractionState extends State<HandleNotificationInteraction> {
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
