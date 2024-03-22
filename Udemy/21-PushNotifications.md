@@ -574,11 +574,57 @@ class _HomeView extends StatelessWidget {
 
 1. Crear stateful widget llamado HandleNotificationInteractions el final de main.dart.
   - Recibe un widget y lo retorna.
-2. Colocar builder
+2. Colocar builder en Material App para retornar instancia de HandleNotificationInteractions, en donde el child viene directamente del builder.
+  - El Child dado por el builder básicamente regresa el nuevo MaterialApp.
+  - Entonces se está envolviendo a toda la aplicación en HandleNotificationInteractions.
+3. Se copia parte del código dado por Firebase y se implementa en el state de HandleNotificationsInteraction. Solo no se copia el override de la función build.
+4. Agregar lógica deseada en _handleMessage.
+  1. Al seleccionar la notificación lo primero que se va a hacer es almacenarla en el bloc.
+    1. En notifications_bloc se hace público el método handleRemoteMessage, ya que se encarga de disparar el evento de NotificationsReceived.
+    2. Invocar handleRemoteMessage en _handleMessage de main.dart.
+    3. Usar Go_Router para navegar a la ventana de details.
+      - Para este momento puede que no esté inicialiado el router, pero se puede usar appRouter, el cual es la instancia de GoRouter.
+``` dart
+  void _handleMessage(RemoteMessage message) {
+    context.read<NotificationsBloc>().handleRemoteMessage(message);
+    final messageId = message.messageId?.replaceAll(':', '').replaceAll('%', '');
+    appRouter.push('/push-details/$messageId');
+  }
+```
 
 
+# Sección 22. Enviar notificaciones desde una RestAPI
+- Se debe vovler a configurar firebase con el token del dispotivo (esto es si se trabaja en dos máquinas diferentes)
+## Temas
+- Crear un backend rápido para obtener el Bearer token de Firebase, y con eso, poder probar el Restful API de la forma recomendada de Firebase.
+- También les explicaré una forma simple, pero ya no es la recomendada.
 
+## Forma recomendad
+- Se debe crear un backend.
+- Se descarga el servidor de node y se ejecuta.
+### Bearer Token
+1. Autorizar Request. https://firebase.google.com/docs/cloud-messaging/auth-server
+  - Esto ya está en el servidor que se pasó.
+2. Ir al proyecto en Firebase.
+  1. En Descrición general en el navegador izquierdo se selecciona el engrane para poder seleccionar configuración del proyecto.
+  2. Seleccionar opción cuentas de servicio.
+  3. Click en el botón generar nueva clase privada.
+  4. El archivo JSON descargado se pega en el proyecto de node.
+    1. Renombrar por firebase-admin.json
+  5. Correr aplicación y acceder al puerto 3000 para obtener bearer token.
 
+### REST
+1. Hacer pruebas en Postman.
+  1. En la documentación de firebase, en la parte de Via REST se copia solo la primera línea de código después de POST y antes de HTTP. https://firebase.flutter.dev/docs/messaging/notifications#via-rest
+  https://fcm.googleapis.com/v1/projects/flutter-projects-2768a/messages:send
+  2. Se coloca el nombre del proyecto dado por firebase en la sección correspondiente de la línea copiada.
+  3. En Postman se usa el verbo POST.
+  4. EN Postman, en Auth y con la poción de Bearer Token se pega el Token sin las comillas.
+  5. En body se selecciona RAW y se pega el JSON dado en la documentación en lo restante del código.
+    1. Colocar el token del dispositivo en el campo de token.
+    2. El último campo del JSON no debe llevar coma al final.
+    3. En el campo de data se pueden enviar más valores.
+  6. Si se desea enviar imágenes entones se revisa la documentación y se filtra por imageUrl. https://firebase.google.com/docs/cloud-messaging/send-message?hl=es-419#rest
 
 # Notas
 ## context.read
