@@ -626,8 +626,220 @@ class _HomeView extends StatelessWidget {
     3. En el campo de data se pueden enviar más valores.
   6. Si se desea enviar imágenes entones se revisa la documentación y se filtra por imageUrl. https://firebase.google.com/docs/cloud-messaging/send-message?hl=es-419#rest
 
+# Sección 23. Local Notifications.
+- Las push notifications son disparadas mediante entes externos, tal como un backend.
+  - No se sabe cuándo van a suceder.
+    - P/E: alguna persona hace una notificación, por lo que ahora hay que notificar a los demás usuarios.
+- Con Local notifications se sabe el punto en el tiempo en el que la notificación va a caer.
+  - P/E: una aplicación que notificará al usuario cuándo un cofre se va a abrir en un juego.
+  - Pueden ser programables para que sucedan cada determinado tiempo.
+  - Se pueden usar para cuando se recibe una push notification mostrar una pop up con la información de la notification.
+
+## Temas
+- Mezclar Push + Local Notifications
+- Reaccionar cuando se tocan las local notifications
+- Sonidos e iconos personalizados
+- Aprender a evitar las dependencias ocultas.
+
+
+
+## 1. LocalNotifications - Android
+https://www.udemy.com/course/flutter-cero-a-experto/learn/lecture/36770512#overview
+1. Se descarga la librería flutter_local_notifications. https://pub.dev/packages/flutter_local_notifications
+  - En la documentación se especifican las limitaciones del paquete, lo cual es recomendable leer.
+2. Opcional. Colocar compileOptions en android/app/build.gradle como lo indica la sección de Android Setup de la dependencia.
+  - Opcional. También colocar la sección de dependencias.
+  - Opcional. Colocar buildscript {dependencies}
+  - Pueden no colocarse ya que por el momento no se van a usar.
+  - Colocar el compileSdkVersion que especifia la documentación.
+3. Lógica de requestPermission a partir de la documentación.
+  1. config -> local_notifications -> local_notifications.dart
+``` dart
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+Future<void> requestPermissionLocalNotifications() async {
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestNotificationsPermission();
+}
+```
+4. Colocar función de requestPermissionLocalNotification en notifications_bloc.dart, requesPermission.
+  - Técnicamente sería conveniente mandar esta implementación en el constructor del bloc ya que esto podría estar oculto, sería difícil de rastrear.
+  - Esto que se acaba de hacer no es necesario ya que se hizo en await messaging.requestPermission en la misma función en donde se implementó.
+
+``` dart
+  void requestPermission() async {
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: true,
+      provisional: false,
+      sound: true,
+    );
+
+    // Solictiar permiso a las local notifications
+    await requestPermissionLocalNotifications();
+
+    add(NotificationStatusChanged(settings.authorizationStatus));
+  }
+```
+
+5. Permiso para que las aplicaciones aparezcan cuando el celular esté con pantalla encendia y cuando esté bloqueado, lo cual se coloca en AndroidManifest \app\src\main\AndroidManifest.xml. (https://pub.dev/packages/flutter_local_notifications#full-screen-intent-notifications)
+6. Detener App y volver a correr.
+
+### Notas
+Se tuvieron que agregar los siguientes campos en \android\app\build.gradle:
+
+``` gradle
+
+    defaultConfig {
+        multiDexEnabled true
+    }
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
+}
+```
+- Las dependencias se tomaron de: https://pub.dev/packages/flutter_local_notifications#gradle-setup, así como multiDexEnabled.
+
+## 2. Configuración - LocalNotifications
+1. Crear clase LocalNotifications en local_notifications.dart
+2. Agregar método antes creado de request permissoin como método estático.
+3. Corregir invocación del método que ahora es estático en notifications_bloc.
+4. Para la sección de AndroidInitializationSettings se pasa un ícono, el cual se obtiene de: \android\app\src\main\res\drawable
+5. Colocar configuraciones de Android.
+6. Invocar método de inicialización creado en main.dart
+
+``` dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  await NotificationsBloc.initializeFCM();
+  await LocalNotifications.initializeLocalNotifications();
+```
+
+## 3. Mostrar LocalNotification
+- Las configuraciones que se colocan son una parte del código que se muestra en la documentacion de notifications. https://pub.dev/packages/flutter_local_notifications/example
+1. Crear método estático en LocalNotifications showLocalNotifications()
+2. Colocar audio deseado en una nueva carpeta llamada raw en: \android\app\src\main\res
+3. channelId y channelName pueden ser cualquier cosa en AndroidNotificationDetails.
+4. Invocar showLocalNotification en el punto en que se tengan todos los parámetros (id, title ...), lo cual es en notifications bloc en handleRemoteMessage.
+  1. Se coloca una variable entera en el bloc para irla incrementando cada que se recibe una notificación y uasr este valor como id.
+    - Esto se hace en el bloc porque el métod showLocalNotifications es estático, por lo que poner lo del id en la clase no funcionaría ya que los métodos estáticos no tienen acceso las instancias.
+
+``` dart
+
+class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  int pushNumberId = 0;
+
+  void handleRemoteMessage(RemoteMessage message) {
+    if (message.notification == null) return;
+
+    final notification = PushMessage(
+      messageId: message.messageId?.replaceAll(':', '').replaceAll('%', '') ?? '',
+      title: message.notification!.title ?? '',
+      body: message.notification!.body ?? '',
+      sentDate: message.sentTime ?? DateTime.now(),
+      data: message.data,
+      imageUrl: Platform.isAndroid ? message.notification!.android?.imageUrl : message.notification!.apple?.imageUrl,
+    );
+
+    LocalNotifications.showLocalNotification(
+      id: ++pushNumberId,
+      body: notification.body,
+      data: notification.data.toString(),
+      title: notification.title,
+    );
+    add(NotificationReceived(notification));
+  }
+```
+
+## 4. Evitar dependencias ocultas
+- Usualmente cuando se lee una clase se lee de qué extiende, las propiedades que tiene y el constructor.
+  - De ahí, si se desea ver una implementación se va directamente a ese método de la clase.
+  - Por el momento la clase de NotificationBloc no se sabe a primera vista que depende de la clase creada LocalNotification, lo cual se considera una dependencia oculta.
+  - Si se quisiera compartir la clase de NotificationsBloc entonces tambien se debería conmpartir la de LocalNotifications, en donde el otro usuario puede tener una implementación diferente de LocalNotifications, dando incompatibilidad de software.
+- Las dependencias ocultas se resuelven con las propiedades que se reciben cuando se crea la instancia del bloc.
+  - En el caso de messaging no se considera una dependencia oculta, ya que se tiene su especificación en el nivel superior de la clase.
+
+``` dart
+class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+```
+
+1. Definir propiedad opcional en NotificationsBloc llamada requestLocalNotificationPermissions y agregarla al constructor.
+
+``` dart
+class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  int pushNumberId = 0;
+
+  final Future<void> Function() requestLocalNotificationPermissions;
+
+  NotificationsBloc({required this.requestLocalNotificationPermissions}) : super(const NotificationsState()) {
+```
+
+2. Verificar que la función no sea nula para poder invocarla.
+
+``` dart
+    // Solictiar permiso a las local notifications
+    if (requestLocalNotificationPermissions != null) {
+      await requestLocalNotificationPermissions();
+      //await LocalNotifications.requestPermissionLocalNotifications();
+    } 
+```
+
+3. Mandar función al invocar NotificationBloc en main.
+
+``` dart
+        BlocProvider(
+          create: (_) => NotificationsBloc(
+            requestLocalNotificationPermissions: LocalNotifications.requestPermissionLocalNotifications,
+          ),
+        ),
+```
+
+4. Segunda función, showLocalNotification.
+  - Se coloca la propiedad de la función (se puede usar typedef si se desea ser más específico)
+
+
+## 5. Reaccionar al tocar una Local Notification
+1. En LocalNotifications se usa onDidReceive... en el método initialize, el cual recibe el método que se define en el paso 2.
+2. Definir método estático para navegación a pantalla de notificación.
+  1. El campo de data debe ser messageId para identificar LocalNotifications o pushes que se van a manejar ahí.
+    - Se hace el cambio en notifications_bloc.dart en el parámetro que se envía a data de showLocalNotification.
+``` dart
+  static void onDidReceiveNotificationResponse(NotificationResponse reponse) {
+    appRouter.push('/push-details/${reponse.payload}');
+  }
+```
+
+``` dart
+    if (showLocalNotifications != null) {
+      showLocalNotifications!(
+        id: ++pushNumberId,
+        body: notification.body,
+        data: notification.messageId,
+        title: notification.title,
+      );
+/*     LocalNotifications.showLocalNotification(
+      id: ++pushNumberId,
+      body: notification.body,
+      data: notification.data.toString(),
+      title: notification.title,
+    ); */
+    }
+```
+
 # Notas
 ## context.read
 - Se usa en método porque no se desea redibujar en un onPressed.
 ## Tokens
 - En el Backend se pueden guardar los diferentes tokens que un usuario guarda para poder mandarles notificaciones a los dispositivos que tiene.
+## Local Notifications
+- Cuando se hacen configuraciones en las carpetas de android, ios o windows, etc, se debe bajar la app y volver a subir.
