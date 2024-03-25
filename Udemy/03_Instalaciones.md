@@ -101,3 +101,10 @@ https://stackoverflow.com/questions/47239251/install-failed-user-restricted-andr
 
 <img src='Images\xiaomi.png'></img>
 
+## Ipod físico
+1. Conectar dispositivo y permitir permisos.
+2. Instalar cocoapods.
+
+``` bash
+
+```

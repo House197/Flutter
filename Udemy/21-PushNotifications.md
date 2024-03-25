@@ -836,6 +836,9 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     }
 ```
 
+# Sección 24. Configuracions iOS
+- Se require de una mac o una vm mac para poder probar.
+
 # Notas
 ## context.read
 - Se usa en método porque no se desea redibujar en un onPressed.
