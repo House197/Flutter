@@ -1,53 +1,3 @@
-# Sección 25. Preparación backend
-## Temas
-1. Docker
-2. Docker compose
-3. Imágenes de docker
-4. Conectarse a postgres usando TablePlus
-5. Probar el backend configurado
-6. Llenar la base de datos
-7. Leer la documentación del backend
-8. Generar JWTs y probarlos
-9. Uso de bearer tokens en los headers de autenticación
-10. Trabajar las pruebas con Postman
-
-## Backend - Nest - Postgres - Docker
-https://github.com/Klerith/flutter-backend-teslo
-
-## Sección 26. Autenticación - JWT - Rivepod
-## Temas
-1. Realizar el POST HTTP
-2. Obtener las credenciales del usuario
-3. Manejo de errores personalizados
-4. Manejo del estado del formulario con Riverpod
-5. Comunicación entre providers
-6. Entre otras cosas
-
-## 1. Inicio de aplicación
-
-## 2. Riverpod - Inputs y LoginState
-1. Instalar:
-    1. formz
-    2. flutter_riverpod
-2. features -> shared -> infrastructure -> inputs -> email.dart
-3. features -> shared -> infrastructure -> inputs -> password.dart
-4. Riverpod
-    1. features -> auth -> presentation -> providers -> login_form_provider.dart
-        1. State del provider.
-        2. Implementación de notifier.
-        3. StateNotifierProvider - consume afuera.
-            - Se usa autoDispose para que al cerrar la ventana se eliminen los datos que se hayan quedado en el formulario.
-    2. Envolver MainApp en main.dart con ProviderScope.
-
-``` dart
-void main() {
-  runApp(
-    const ProviderScope(child: MainApp()),
-  );
-}
-```
-
-``` dart
 // 1. State del provider
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:formz/formz.dart';
@@ -142,12 +92,3 @@ class LoginFormNotifier extends StateNotifier<LoginFormState> {
 final loginFormNotifier = StateNotifierProvider.autoDispose<LoginFormNotifier, LoginFormState>((ref) {
   return LoginFormNotifier();
 });
-
-```
-
-5. Conectar formulario con Provider
-    1. features -> presentation -> screens -> login_screen.dart
-    2. Convertir Widget en ConsumerWidget.
-    3. Definir WidgetRef en función build.
-    4. Usar ref.watch para escuchar al provider deseado.
-    5. Mostrar errores cuando el usuario haga submit del formulario, por lo que se debe colocar una condicional en errorMessage con el campo isFormPosted del estado.
