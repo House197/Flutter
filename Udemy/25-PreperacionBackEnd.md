@@ -151,3 +151,57 @@ final loginFormNotifier = StateNotifierProvider.autoDispose<LoginFormNotifier, L
     3. Definir WidgetRef en función build.
     4. Usar ref.watch para escuchar al provider deseado.
     5. Mostrar errores cuando el usuario haga submit del formulario, por lo que se debe colocar una condicional en errorMessage con el campo isFormPosted del estado.
+
+## 3. Variables de entorno
+1. Instalar flutter_dotenv
+2. Crear archivos en raíz de proyecto:
+  1. .env
+  2. .env.template
+3. config -> const -> evironment.dart
+  - Se crea método para inicializar variables de entorno en main.dart
+``` dart
+class Environment {
+  static initEnvironment() async {
+    await dotenv.load(fileName: ".env");
+  }
+
+  static String apuUrl = dotenv.env['API_URL'] ?? 'No hay API';
+}
+
+```
+4. Configurar variables de entorno en pubspec.yaml, en assets.
+
+``` yml
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/loaders/
+    - assets/images/
+    - google_fonts/montserrat_alternates/
+    - .env
+```
+
+5. Inicializar variables de entorno en main.dart
+
+``` dart
+void main() async {
+  await Environment.initEnvironment();
+  runApp(
+    const ProviderScope(child: MainApp()),
+  );
+}
+```
+
+## 4. Auth - Repositorio y Datasource
+1. features -> auth -> domain -> entities -> user.dart
+1. features -> auth -> domain -> datasources -> auth_datasource.dart
+1. features -> auth -> domain -> repositories -> auth_repository.dart
+1. features -> auth -> infrastructure -> mapper -> user_mapper.dart
+
+## 5. Implementación Login
+1. Instalar dio
+2. Crear errores personalizado features -> auth -> infrastructure -> errors -> auth_errors.dart
+
+## 6. Auth Provider
+1. features -> auth -> providers -> auth_provider.dart
