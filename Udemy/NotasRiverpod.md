@@ -20,3 +20,6 @@
 # Uso de watch y read
 - En funciones se debe usar read, no watch.
 - En providers se debe usar watch.
+
+## Actualización de estado
+- Basta con modificar al estado para disparar eventos en flutter, lo cual no es el caso cuando se usa provider en donde se debía llamar a la función notifyListeners()

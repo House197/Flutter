@@ -209,6 +209,19 @@ class WrongCredentials implements Exception {}
 
 class InvalidToken implements Exception {}
 
+class ConnectionTimeot implements Exception {}
+
+class CustomError implements Exception {
+  final String message;
+  final int errorCode;
+
+  CustomError(
+    this.message,
+    this.errorCode,
+  );
+}
+
+
 ```
 
 ### Login y logout desde provider
@@ -300,3 +313,195 @@ class AuthState {
 - Por el momento se va a tener un error de 'Connection refused', lo cual sucede con emuladores Android.
     - Esto sucede porque se llama localhost en el emulador de Android
     - Se debe apuntar al IP de la máquina donde corre el servicio, lo cual se hace en la dirección de la API colocada en .env.
+
+## 8. Manejo de errores
+1. En archivo auth_datasource_impl.dart
+  - Se verifican las exepciones que pueden venir de dio, como por ejemplo credenciales incorrectas.
+
+``` dart
+  Future<User> login(String email, String password) async {
+    try {
+      final response = await dio.post('/auth/login', data: {'email': email, 'password': password});
+      final user = UserMapper.userJsonToEntity(response.data);
+      return user;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw WrongCredentials();
+      if (e.type == DioExceptionType.connectionTimeout) throw ConnectionTimeot();
+      throw CustomError('Something wrong happened', 500);
+    } catch (e) {
+      throw CustomError('Something wrong happened', 501);
+    }
+  }
+```
+
+2. Implementación de errores en auth_provider.dart
+
+``` dart
+  Future<void> loginUser(String email, String password) async {
+    // Se coloca un delay intencional
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    try {
+      final user = await authRepository.login(email, password);
+      _setLoggedUser(user);
+    } on WrongCredentials catch (e) {
+      logout('Credenciales no son correctas');
+    } on ConnectionTimeout {
+      logout('Timeout');
+    } catch (e) {
+      logout('Error no controlador');
+    }
+  }
+```
+
+## 9. Mostrar el error en pantalla
+- La función de logout tiene el mensaje de error.
+1. Escuchar estado en login_screen.dart
+2. Usar snackBar para mostrar error.
+
+``` dart
+  void showSnackbar(BuildContext context, String errorMessage) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loginForm = ref.watch(loginFormNotifier);
+
+    // El listener ya se elimina, lo cual se gestiona por ConsumerWidget
+    ref.listen(authProvider, (previous, next) {
+      if (next.errorMessage.isEmpty) return;
+      showSnackbar(context, next.errorMessage);
+    });
+
+```
+
+### Uso de custom error.
+- Puede ser útil si se desea guardar la data en un logger.
+  - Por otro lado, permite atrapar las respuestas de error directamente desde el backend.
+1. auth_datasource_impl.dart
+
+``` dart
+  Future<User> login(String email, String password) async {
+    try {
+      final response = await dio.post('/auth/login', data: {'email': email, 'password': password});
+      final user = UserMapper.userJsonToEntity(response.data);
+      return user;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw CustomError(e.response?.data['message'] ?? 'Credenciales no válidas');
+      if (e.type == DioExceptionType.connectionTimeout) throw CustomError('Revisar conexión a internet');
+      throw CustomError('Something wrong happened');
+    } catch (e) {
+      throw CustomError('Something wrong happened');
+    }
+  }
+
+```
+
+2. auth_provider.dart
+
+``` dart
+  Future<void> loginUser(String email, String password) async {
+    // Se coloca un delay intencional
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    try {
+      final user = await authRepository.login(email, password);
+      _setLoggedUser(user);
+    } on CustomError catch (e) {
+      logout(e.message);
+    } catch (e) {
+      logout('Error no controlador');
+    }
+  }
+```
+
+# Sección 26. Go Router - Protección de rutas
+## Temas
+1. Proteger rutas
+2. Redireccionar
+3. Actualizar instancia del GoRouter cuando hay cambios en el estado
+4. Colocar listeners de GoRouter
+5. Change notifier
+6. Preferencias de usuario
+7. Almacenar token de acceso de forma permanente
+
+## Corregir overflow en register_scree.dart
+- Esta ventana debe hacerse manual.
+- Se puede usar const Spacer.
+https://www.udemy.com/course/flutter-cero-a-experto/learn/lecture/36954462#questions
+
+## Preferencias de usuario - Shared Preferences
+1. Instalar shared_preferences
+  - https://pub.dev/packages/shared_preferences
+  - Permite grabar en el dispositivo. También se puede usar isar, pero shared_preferences es muy usado para esto.
+2. Aplicar patrón adaptador a shared_preferences.
+  - Se le puede dedicar una sección para domain, infrastructure, etc. Sin embargo, no va a requerir tanta mecánica, solo 3 métodos.
+  1. features -> shared -> infrastructure -> services -> key_value_storage_service.dart (clase abstracta)
+
+    - Se coloca en shared ya que se desea crear un wrapper alrededor de la mecánica de shared_preferences que solo lo use en un solo lugar.
+    - Ya que el valor que pueden recibir los valores pueden ser varios se decide usar genéricos.
+      - Se recuerda que con esto Dart maneja el dato según el tipo de dato que le llegue.
+
+
+
+  2. features -> shared -> infrastructure -> services -> key_value_storage_service_impl.dart (implementación de clase abstracta)
+    - Definir instancia de sharedPreferences para consumir métodos
+
+``` dart
+abstract class KeyValueStorageService {
+  Future<void> setKeyValue<T>(String key, T value);
+  Future<T?> getValue<T>(String key);
+  Future<bool> removeKey(String key);
+}
+
+```    
+
+``` dart
+import 'package:teslo_shop/features/shared/infrastructure/services/key_value_storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class KeyValueStorageServiceImpl extends KeyValueStorageService {
+  Future getSharedPrefs() async {
+    return await SharedPreferences.getInstance();
+  }
+
+  @override
+  Future<T?> getValue<T>(String key) async {
+    final prefs = await getSharedPrefs();
+
+    switch (T) {
+      case int:
+        return prefs.getInt(key) as T?;
+      case String:
+        return prefs.getString(key) as T?;
+      default:
+        throw UnimplementedError('GET not implemented for type ${T.runtimeType}');
+    }
+  }
+
+  @override
+  Future<bool> removeKey(String key) async {
+    final prefs = await getSharedPrefs();
+    return await prefs.remove(key);
+  }
+
+  @override
+  Future<void> setKeyValue<T>(String key, T value) async {
+    final prefs = await getSharedPrefs();
+
+    switch (T) {
+      case int:
+        prefs.setInt(key, value as int);
+        break;
+      case String:
+        prefs.setString(key, value as String);
+        break;
+      default:
+        throw UnimplementedError('Set not implemented for type ${T.runtimeType}');
+    }
+  }
+}
+
+```

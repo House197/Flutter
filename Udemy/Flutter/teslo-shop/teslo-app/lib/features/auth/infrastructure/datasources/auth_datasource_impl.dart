@@ -19,9 +19,12 @@ class AuthDatasourceImpl extends AuthDatasource {
       final response = await dio.post('/auth/login', data: {'email': email, 'password': password});
       final user = UserMapper.userJsonToEntity(response.data);
       return user;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw CustomError(e.response?.data['message'] ?? 'Credenciales no válidas');
+      if (e.type == DioExceptionType.connectionTimeout) throw CustomError('Revisar conexión a internet');
+      throw CustomError('Something wrong happened');
     } catch (e) {
-      print('error');
-      throw WrongCredentials();
+      throw CustomError('Something wrong happened');
     }
   }
 
