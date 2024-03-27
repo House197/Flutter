@@ -202,6 +202,101 @@ void main() async {
 ## 5. Implementación Login
 1. Instalar dio
 2. Crear errores personalizado features -> auth -> infrastructure -> errors -> auth_errors.dart
+    - WrongCredentials se va a dar por estado 400, bad request, unauthorized
+        - Cualquier otro error sería un error no controlador.
+``` dart
+class WrongCredentials implements Exception {}
+
+class InvalidToken implements Exception {}
+
+```
+
+### Login y logout desde provider
+``` dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teslo_shop/features/auth/domain/entities/user.dart';
+import 'package:teslo_shop/features/auth/domain/repositories/auth_repository.dart';
+import 'package:teslo_shop/features/auth/infrastructure/errors/auth_errors.dart';
+import 'package:teslo_shop/features/auth/infrastructure/repositories/auth_repository_impl.dart';
+
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  final authRepository = AuthRepositoryImpl();
+  return AuthNotifier(authRepository: authRepository);
+});
+
+class AuthNotifier extends StateNotifier<AuthState> {
+  final AuthRepository authRepository;
+  AuthNotifier({required this.authRepository}) : super(AuthState());
+
+  void loginUser(String email, String password) async {
+    // Se coloca un delay intencional
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    try {
+      final user = await authRepository.login(email, password);
+      _setLoggedUser(user);
+    } on WrongCredentials catch (e) {
+      logout('Credenciales no son correctas');
+    } catch (e) {
+      logout('Error no controlador');
+    }
+  }
+
+  void registerUser(String email, String pssword) async {}
+
+  void checkAuthStatus(String email, String pssword) async {}
+
+  void _setLoggedUser(User user) {
+    // TODO: guardar token físicamente
+    state = state.copyWith(
+      user: user,
+      authStatus: AuthStatus.authenticated,
+    );
+  }
+
+  Future<void> logout([String? errorMessage]) async {
+    // TODO: limpiar token
+    state = state.copyWith(
+      authStatus: AuthStatus.notAuthenticated,
+      user: null,
+      errorMessage: errorMessage,
+    );
+  }
+}
+
+enum AuthStatus { checking, authenticated, notAuthenticated }
+
+class AuthState {
+  final AuthStatus authStatus;
+  final User? user;
+  final String errorMessage;
+
+  AuthState({
+    this.authStatus = AuthStatus.checking,
+    this.user,
+    this.errorMessage = '',
+  });
+
+  AuthState copyWith({
+    AuthStatus? authStatus,
+    User? user,
+    String? errorMessage,
+  }) =>
+      AuthState(
+        authStatus: authStatus ?? this.authStatus,
+        user: user ?? this.user,
+        errorMessage: errorMessage ?? this.errorMessage,
+      );
+}
+
+```
 
 ## 6. Auth Provider
 1. features -> auth -> providers -> auth_provider.dart
+
+## 7. Obtener el Token de acceso
+1. Quitar dependencia ocula en login_form_provider y mostrar que hay dependencia para obtener la función o método del login que se encuentra en AuthNotifier.
+
+- Por el momento se va a tener un error de 'Connection refused', lo cual sucede con emuladores Android.
+    - Esto sucede porque se llama localhost en el emulador de Android
+    - Se debe apuntar al IP de la máquina donde corre el servicio, lo cual se hace en la dirección de la API colocada en .env.

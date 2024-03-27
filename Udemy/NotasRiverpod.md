@@ -16,3 +16,7 @@
 
 # Snippets
 - Se tienen con la extensión Flutter Riverpod Snippets
+
+# Uso de watch y read
+- En funciones se debe usar read, no watch.
+- En providers se debe usar watch.
