@@ -20,6 +20,22 @@
 # Uso de watch y read
 - En funciones se debe usar read, no watch.
 - En providers se debe usar watch.
+    - De igual manera se debe usar watch en la función build.
+
+``` dart
+class MainApp extends ConsumerWidget {
+  const MainApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
+      routerConfig: ref.watch(goRouterProvider),
+      theme: AppTheme().getTheme(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+```
 
 ## Actualización de estado
 - Basta con modificar al estado para disparar eventos en flutter, lo cual no es el caso cuando se usa provider en donde se debía llamar a la función notifyListeners()

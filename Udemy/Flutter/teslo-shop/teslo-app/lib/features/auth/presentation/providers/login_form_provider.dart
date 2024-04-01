@@ -75,9 +75,10 @@ class LoginFormNotifier extends StateNotifier<LoginFormState> {
   onFormSubmit() async {
     _touchEveryField();
     if (!state.isValid) return;
+    state = state.copyWith(isPosting: true);
     //  Print llama al método toString que se le hizo override.
-    print('Se llama form');
     await loginUserCallback(state.email.value, state.password.value);
+    state = state.copyWith(isPosting: false);
   }
 
   _touchEveryField() {

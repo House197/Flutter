@@ -8,9 +8,19 @@ import 'package:teslo_shop/features/auth/infrastructure/mappers/user_mapper.dart
 class AuthDatasourceImpl extends AuthDatasource {
   final dio = Dio(BaseOptions(baseUrl: Environment.apiUrl));
   @override
-  Future<User> checkAuthStatus(String token) {
-    // TODO: implement checkAuthStatus
-    throw UnimplementedError();
+  Future<User> checkAuthStatus(String token) async {
+    try {
+      final reponse = await dio.get('/auth/check-status', options: Options(headers: {'Authorizatiions': 'Bearer $token'}));
+
+      final user = UserMapper.userJsonToEntity(reponse.data);
+      return user;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw CustomError(e.response?.data['message'] ?? 'Token no es válido');
+      if (e.type == DioExceptionType.connectionTimeout) throw CustomError('Revisar conexión a internet');
+      throw Exception();
+    } catch (e) {
+      throw Exception();
+    }
   }
 
   @override

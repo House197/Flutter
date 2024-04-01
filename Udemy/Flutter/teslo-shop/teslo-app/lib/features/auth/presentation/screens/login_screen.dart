@@ -86,6 +86,7 @@ class _LoginForm extends ConsumerWidget {
             obscureText: true,
             errorMessage: loginForm.isFormPosted ? loginForm.password.errorMessage : null,
             onChanged: ref.read(loginFormNotifier.notifier).onPasswordChange,
+            onFieldSubmitted: (_) => ref.read(loginFormNotifier.notifier).onFormSubmit(),
           ),
           const SizedBox(height: 30),
           SizedBox(
@@ -94,9 +95,7 @@ class _LoginForm extends ConsumerWidget {
               child: CustomFilledButton(
                 text: 'Ingresar',
                 buttonColor: Colors.black,
-                onPressed: () {
-                  ref.read(loginFormNotifier.notifier).onFormSubmit();
-                },
+                onPressed: loginForm.isPosting ? null : ref.read(loginFormNotifier.notifier).onFormSubmit,
               )),
           const Spacer(flex: 2),
           Row(
