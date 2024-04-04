@@ -4,6 +4,7 @@ import 'package:teslo_shop/config/router/app_router_notifier.dart';
 import 'package:teslo_shop/features/auth/auth.dart';
 import 'package:teslo_shop/features/auth/presentation/screens/check_auth_status_screen.dart';
 import 'package:teslo_shop/features/auth/providers/auth_provider.dart';
+import 'package:teslo_shop/features/products/presentation/screens/product_screen.dart';
 import 'package:teslo_shop/features/products/products.dart';
 
 final goRouterProvider = Provider((ref) {
@@ -32,6 +33,12 @@ final goRouterProvider = Provider((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const ProductsScreen(),
+      ),
+      GoRoute(
+        path: '/product/:id',
+        builder: (context, state) => ProductScreen(
+          productId: state.params['id'] ?? 'no-id',
+        ),
       ),
     ],
     redirect: (context, state) {

@@ -920,3 +920,618 @@ final productsProdiver = StateNotifierProvider<ProductsNotifier, ProductsState>(
 ```
 
 - En la clase minuto 3 aprox se menciona caso en donde isLastPage, pero una persona en otra parte del mundo agrega un nuevo producto.
+
+## 7. Pantalla de productos
+- Instalar paquete de gridview, el cual se utilizó para masonry en cinemapedia. https://pub.dev/packages/flutter_staggered_grid_view
+1. lib -> features -> products -> presentation -> screens -> products_screen.dart
+2. Implementar scroll controller en view.
+
+``` dart
+  final ScrollController scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // TODO: Implementar infinite scroll
+    ref.read(productsProdiver.notifier).loadNextPage();
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+```
+
+## 8. Tarjetas de producto
+1. lib -> features -> products -> presentation -> widgets -> product_card.dart
+- Se recuerda colocar altura predefinida a las imágenes y al placeholder para reservar el espacio, ya que con el infinite scroll se puede disparar varias veces debido a que la carga de nuevas imágenes no agregaría suficiente espacio si es que no se define antes.
+
+## 9. Pantalla de Producto
+1. lib -> features -> products -> presentation -> screens -> product_screen.dart
+  - En esta pantalla se considera que si se trabaja para la web o se tiene un deep link entonces es conveniente volver a buscar la data, ya que pudo haber cambiado para este momento.
+  - Esta pantalla se va a usar tanto como para actualizar como para crear productos.
+
+2. Colocar ruta de screen.
+
+``` dart
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const ProductsScreen(),
+      ),
+```
+
+3. La tarjeta de ProductCard en ProductsScreen se envuelve con un GestureDectector para poder navegar a la nueva ruta.
+``` dart
+          return GestureDetector(
+            onTap: (){
+              context.push('/product/${product.id}');
+            },
+            child: ProductCard(product: product));
+        }),
+```
+
+# Sección 29. Crear y Actualizar Productos
+## Temas
+Esta sección está dedicada a la creación y mantenimiento de productos. Puntualmente:
+
+1. Formularios
+2. Segmentos de botones
+3. Selectores
+4. Posteos
+5. Path
+6. Post
+7. Retroalimentación de sucesos
+8. Manejo de errores
+9. Inputs personalizados
+10. Y todo lo relacionado al mantenimiento de producto
+
+## 1. Product Provider
+- Se podría hacer solo con 2 providers. Pero se prefiere seguir practicando con StateNotifierProvider.
+  1. El primero que diga cuando está cargando el producto.
+  2. El segundo que mantenga la información del producto.
+1. \lib\features\products\presentation\providers\product_provider.dart
+  - Se usa autodispose y family para indicar que se espera como argumento el productId, por lo que se tiene que mandar a llamar pasando un argumento (en este caso productId).
+    - Al usar family ya no se tiene acceso a notifier directamente, solo hasta el momento de pasar el arguemento.
+  - Por esta razón se coloca un tercer tipo en <>, el cual es string.
+
+2. Implementar la carga del producto.
+  - En el constructor se ejecuta primero la parte de super antes del contructor propio.
+
+3. Implementar getProductById en products_datasource_impl.dart
+  1. Crear features\products\infrastructure\errors\product_errors.dart para gestionar el error de cuando el id dado no es válido para buscar al producto.
+
+### NOTA
+- Se tuvo que colocar lo siguiente de enable... en el manifest
+  - Flutter\teslo-shop\teslo-app\android\app\src\main\AndroidManifest.xml
+
+``` xml
+   <application
+        android:label="teslo_shop"
+        android:name="${applicationName}"
+        android:enableOnBackInvokedCallback="true"
+```
+
+``` dart
+class ProductNotFound implements Exception {}
+```
+
+``` dart
+  @override
+  Future<Product> getProductById(String id) async {
+    try {
+      final response = await dio.get('/products/$id');
+      final product = ProductMapper.jsonToEntity(response.data);
+      return product;
+    } on DioException catch (e) {
+      if (e.response!.statusCode == 404) throw ProductNotFound();
+      throw Exception();
+    } catch (e) {
+      throw Exception();
+    }
+  }
+```
+
+4. Mandarlo a llamar en product_screen.
+
+### FIX
+- Con el código actual existe un error, ya que se intenta llamar el cambio de estado cuando ya no está el notifier implementado.
+  - En ProductScreen Se tiene un ConsumerStatefulWidget, y solo se manda a llamar el productProvider es en el initState del consumerState. Una vez ya no se está ocupando se limpia ya que se está usando autoDispose.
+- Entonces, en product_screen el StatefulWidget es la vista que se va a crear en esta pantalla. 
+  - El problema actual está en que como solo se está usando este provider en un solo lugar y luego ya no es necesario, automáticamente lo destruye y luego se tiene la info de regreso y ya no existe ningún notifier.
+
+- Se borra todo el código y se rehace.
+  - En resumen, el problema era que solo se tenía la referencia a ese productProvider, y solo se tenía en ese método, cuando el método ya no se ocupaba más se hacía la limpieza automática.
+
+``` dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teslo_shop/features/products/presentation/providers/product_provider.dart';
+
+class ProductScreen extends ConsumerWidget {
+  final String productId;
+  const ProductScreen({super.key, required this.productId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final productState = ref.watch(productProvider(productId));
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Editar Producto'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.camera_alt_outlined),
+            onPressed: () {},
+          )
+        ],
+      ),
+      body: Center(child: Text(productState.product?.title ?? 'Cargando')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.save_as_outlined),
+      ),
+    );
+  }
+}
+
+```
+
+- La ventaja que se aprecia de Riverpod acá es que guarda en memoria el productProvider, en donde se va a tener en memoria cuyo 'id' sea el mismo.
+  - Entonces, siempre y cuando el 'id' sea el mismo, se puede usar esta misma sintaxis y va a usar la misma referencia a lo largo de la app.
+
+## 2. Loader
+1. Flutter\teslo-shop\teslo-app\lib\features\shared\widgets\full_screen_loader.dart
+
+``` dart
+class FullScreenLoader extends StatelessWidget {
+  const FullScreenLoader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: Center(
+        child: CircularProgressIndicator.adaptive(),
+      ),
+    );
+  }
+}
+
+```
+
+2. Colocalro en product_screen.dart
+3. Crear formulario, el cual estaba en el material adjunto.
+  1. Flutter\teslo-shop\teslo-app\lib\features\shared\widgets\custom_product_field.dart
+4. De igual forma se tiene el la view del product, la cual se colocará hasta abajo en product_screen.dart
+
+## 3. Campos adicionales de formulario - formz
+- Se requieren hacer validaciones de campos.
+- Antes de hacer el gestor de estado se crean los campos requeridos.
+
+1. Flutter\teslo-shop\teslo-app\lib\features\shared\inputs\title.dart
+  - Solo se hace la validación que no sea vacío. Se copia y pega el de email y solo se modifica.
+
+2. Repetir el proceso para los demás campos que se tengan que validar:
+  - price
+  - stock
+  - slug
+
+## 4. Implementar createUpdateProduct en products_datasource_impl.dart
+``` dart
+  @override
+  Future<Product> createUpdateProduct(Map<String, dynamic> productLike) async {
+    try {
+      final String? productId = productLike['id'];
+      final bool productHasId = productId != null;
+      final String method = productHasId ? 'PATCH' : 'POST';
+      final String url = productHasId ? '/products/$productId' : '/post';
+      productLike.remove('id');
+
+      final response = await dio.request(
+        url,
+        data: productLike,
+        options: Options(method: method),
+      );
+
+      final product = ProductMapper.jsonToEntity(response.data);
+
+      return product;
+    } catch (e) {
+      throw Exception();
+    }
+  }
+```
+
+## 5. Product Form Provider 
+- Aunque product_provider.dart tiene data que podría ayudar con la validación no es lo mismo, por lo que se le dedica un provider unicamente al formulario.
+  - Por otro lado, el product_provider tiene la finalidad de proveer información a la app.
+
+1. Flutter\teslo-shop\teslo-app\lib\features\products\presentation\providers\forms\product_form_provider.dart
+
+### 1. State
+``` dart
+class ProductFormState {
+  final bool isFormValid;
+  final String? id;
+  final TitleForm title;
+  final Slug slug;
+  final Price price;
+  final List<String> sizes;
+  final String gender;
+  final Stock inStock;
+  final String description;
+  final String tags;
+  final List<String> images;
+
+  ProductFormState({
+    this.isFormValid = false,
+    this.id,
+    this.title = const TitleForm.dirty(''),
+    this.slug = const Slug.dirty(''),
+    this.price = const Price.dirty(0),
+    this.sizes = const [],
+    this.gender = 'men',
+    this.inStock = const Stock.dirty(0),
+    this.description = '',
+    this.tags = '',
+    this.images = const [],
+  });
+
+  ProductFormState copyWith(
+    bool? isFormValid,
+    String? id,
+    TitleForm? title,
+    Slug? slug,
+    Price? price,
+    List<String>? sizes,
+    String? gender,
+    Stock? inStock,
+    String? description,
+    String? tags,
+    List<String>? images,
+  ) =>
+      ProductFormState(
+        isFormValid: isFormValid ?? this.isFormValid,
+        id: id ?? this.id,
+        title: title ?? this.title,
+        slug: slug ?? this.slug,
+        price: price ?? this.price,
+        sizes: sizes ?? this.sizes,
+        gender: gender ?? this.gender,
+        inStock: inStock ?? this.inStock,
+        description: description ?? this.description,
+        tags: tags ?? this.tags,
+        images: images ?? this.images,
+      );
+}
+
+```
+
+### 2. Notifier
+- Se recuerda que se encarga de mantener el estado y sus cambios. También de emitir la data que debe ser procesada por otro ente.
+
+``` dart
+class ProductFormNotifier extends StateNotifier<ProductFormState> {
+  final void Function(Map<String, dynamic> productLike)? onSubmitCallback;
+
+  ProductFormNotifier({
+    required Product product,
+    this.onSubmitCallback,
+  }) : super(ProductFormState(
+          id: product.id,
+          title: TitleForm.dirty(product.title),
+          slug: Slug.dirty(product.slug),
+          price: Price.dirty(product.price),
+          sizes: product.sizes,
+          gender: product.gender,
+          inStock: Stock.dirty(product.stock),
+          description: product.description,
+          tags: product.tags.join(','),
+          images: product.images,
+        ));
+
+  void onTitleChanged(String value) {
+    state = state.copyWith(
+      title: TitleForm.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(value),
+        Slug.dirty(state.slug.value),
+        Price.dirty(state.price.value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+
+  void onSlugChanged(String value) {
+    state = state.copyWith(
+      slug: Slug.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(state.title.value),
+        Slug.dirty(value),
+        Price.dirty(state.price.value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+
+  void onPriceChanged(double value) {
+    state = state.copyWith(
+      price: Price.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(state.title.value),
+        Slug.dirty(state.slug.value),
+        Price.dirty(value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+
+  void onStockChanged(int value) {
+    state = state.copyWith(
+      inStock: Stock.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(state.title.value),
+        Slug.dirty(state.slug.value),
+        Price.dirty(state.price.value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+}
+```
+
+### 3. Provider
+- Este provider tendrá tanto autoDispose como family, ya que se va a recibir un producto.
+
+``` dart
+final productFormProvider = StateNotifierProvider.autoDispose.family<ProductFormNotifier, ProductFormState, Product>((ref, product) {
+  final createUpdateCallback = ref.watch(productsRepositoryProvider).createUpdateProduct;
+  return ProductFormNotifier(product: product, onSubmitCallback: createUpdateCallback);
+});
+
+class ProductFormNotifier extends StateNotifier<ProductFormState> {
+  final Future<Product> Function(Map<String, dynamic> productLike)? onSubmitCallback;
+
+  ProductFormNotifier({
+    required Product product,
+    this.onSubmitCallback,
+  }) : super(ProductFormState(
+          id: product.id,
+          title: TitleForm.dirty(product.title),
+          slug: Slug.dirty(product.slug),
+          price: Price.dirty(product.price),
+          sizes: product.sizes,
+          gender: product.gender,
+          inStock: Stock.dirty(product.stock),
+          description: product.description,
+          tags: product.tags.join(','),
+          images: product.images,
+        ));
+
+  Future<bool> onFormSubmit() async {
+    _touchedEverything();
+    if (!state.isFormValid) return false;
+
+    if (onSubmitCallback == null) return false;
+
+    final productLike = {
+      'id': state.id,
+      'title': state.title.value,
+      'price': state.price.value,
+      'description': state.description,
+      'slug': state.slug.value,
+      'stock': state.inStock.value,
+      'sizes': state.sizes,
+      'gender': state.gender,
+      'tags': state.tags.split(','),
+      // Imágenes es diferente debido a cómo trabaja el backend.
+      'images': state.images
+          .map(
+            (image) => image.replaceAll('${Environment.apiUrl}/files/product/', ''),
+          )
+          .toList(),
+    };
+
+    try {
+      await onSubmitCallback!(productLike);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Se había usado en otra app para que los errores aparezcan cuando se ha pasado por todos los inputs. Tabmién se puede usar para revisar isFormSubmitted
+  void _touchedEverything() {
+    state = state.copyWith(
+        isFormValid: Formz.validate([
+      TitleForm.dirty(state.title.value),
+      Slug.dirty(state.slug.value),
+      Price.dirty(state.price.value),
+      Stock.dirty(state.inStock.value),
+    ]));
+  }
+
+  void onTitleChanged(String value) {
+    state = state.copyWith(
+      title: TitleForm.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(value),
+        Slug.dirty(state.slug.value),
+        Price.dirty(state.price.value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+
+  void onSlugChanged(String value) {
+    state = state.copyWith(
+      slug: Slug.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(state.title.value),
+        Slug.dirty(value),
+        Price.dirty(state.price.value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+
+  void onPriceChanged(double value) {
+    state = state.copyWith(
+      price: Price.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(state.title.value),
+        Slug.dirty(state.slug.value),
+        Price.dirty(value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+
+  void onStockChanged(int value) {
+    state = state.copyWith(
+      inStock: Stock.dirty(value),
+      isFormValid: Formz.validate([
+        TitleForm.dirty(state.title.value),
+        Slug.dirty(state.slug.value),
+        Price.dirty(state.price.value),
+        Stock.dirty(state.inStock.value),
+      ]),
+    );
+  }
+
+  void onSizeChanged(List<String> sizes) {
+    state = state.copyWith(sizes: sizes);
+  }
+
+  void onGenderChanged(String gender) {
+    state = state.copyWith(gender: gender);
+  }
+
+  void onDescriptionChanged(String description) {
+    state = state.copyWith(description: description);
+  }
+
+  void onTagsChanged(String tags) {
+    state = state.copyWith(tags: tags);
+  }
+}
+
+class ProductFormState {
+  final bool isFormValid;
+  final String? id;
+  final TitleForm title;
+  final Slug slug;
+  final Price price;
+  final List<String> sizes;
+  final String gender;
+  final Stock inStock;
+  final String description;
+  final String tags;
+  final List<String> images;
+
+  ProductFormState({
+    this.isFormValid = false,
+    this.id,
+    this.title = const TitleForm.dirty(''),
+    this.slug = const Slug.dirty(''),
+    this.price = const Price.dirty(0),
+    this.sizes = const [],
+    this.gender = 'men',
+    this.inStock = const Stock.dirty(0),
+    this.description = '',
+    this.tags = '',
+    this.images = const [],
+  });
+
+  ProductFormState copyWith({
+    bool? isFormValid,
+    String? id,
+    TitleForm? title,
+    Slug? slug,
+    Price? price,
+    List<String>? sizes,
+    String? gender,
+    Stock? inStock,
+    String? description,
+    String? tags,
+    List<String>? images,
+  }) =>
+      ProductFormState(
+        isFormValid: isFormValid ?? this.isFormValid,
+        id: id ?? this.id,
+        title: title ?? this.title,
+        slug: slug ?? this.slug,
+        price: price ?? this.price,
+        sizes: sizes ?? this.sizes,
+        gender: gender ?? this.gender,
+        inStock: inStock ?? this.inStock,
+        description: description ?? this.description,
+        tags: tags ?? this.tags,
+        images: images ?? this.images,
+      );
+}
+```
+
+## 5. Conectar el provider con el formulario
+1. product_screen.dart, convertir _ProductView en ConsumerWidget para poder tener referencia el provider del form.
+
+``` dart
+class _ProductView extends ConsumerWidget {
+  final Product product;
+
+  const _ProductView({required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    final productForm = ref.watch(productFormProvider(product));
+```
+
+2. Proveer de la información del producto desde productForm y no directamente desde el Product, ya que el form ya contiene la data del product.
+  - Esto es útil para ir viendo las modificaciones que se le vayan haciendo.
+3. Hacer referencia tambi+en en _ProductInformation por medio de riverpod.
+  - Se recuerda que la Riverpod hace una instancia global de los proveedores, por lo que cada que se hace ref.wath o read en realidad solo se están apuntando a la referencia de esta instancia, por lo que no importa las veces que se vaya haciendo la referencia con ref.watch y read.
+4. Usar productForm para llenar data de _ProductInformation y pasar callback a CustomProductField así como errorMessage.
+  - Se usa read para pasar la referencia de funciones con Riverpod.
+5. Incovar onFormSubmit en botón de guardado.
+
+## 6. Actualizar la pantalla de productos
+- Los providers son diferentes para los productos que se ven en el formulario y los que se ven en la pantalla principal.
+  - Por esta razón hasta el momento el cambio solo se refleja en el formulario del producto, no en la pantalla principal.
+1. Se implementa el método de actualización en products_provider.dart.
+
+``` dart
+  Future<bool> createOrUpdateProduct(Map<String, dynamic> productLike) async {
+    try {
+      final product = await productsRepository.createUpdateProduct(productLike);
+      final isProductInList = state.products.any((element) => element.id == product.id);
+      if (!isProductInList) {
+        state = state.copyWith(products: [...state.products, product]);
+      }
+
+      state = state.copyWith(products: state.products.map((e) => e.id == product.id ? product : e).toList());
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+```
+
+2. Llamar este método en product_form_provider.dart
+  - Ahora el callback viene de este provider y no del productsRepositoryProvider.
+  - Se hace cambio también en la firma que espera el notifier, ya que ahora el callback regresa un bool y no un product.
+
+``` dart
+final productFormProvider = StateNotifierProvider.autoDispose.family<ProductFormNotifier, ProductFormState, Product>((ref, product) {
+  //final createUpdateCallback = ref.watch(productsRepositoryProvider).createUpdateProduct;
+  final createUpdateCallback = ref.watch(productsProdiver.notifier).createOrUpdateProduct;
+  return ProductFormNotifier(product: product, onSubmitCallback: createUpdateCallback);
+});
+
+class ProductFormNotifier extends StateNotifier<ProductFormState> {
+  final Future<bool> Function(Map<String, dynamic> productLike)? onSubmitCallback;
+
+  ProductFormNotifier({
+    required Product product,
+```
