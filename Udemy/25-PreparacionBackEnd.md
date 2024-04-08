@@ -1535,3 +1535,248 @@ class ProductFormNotifier extends StateNotifier<ProductFormState> {
   ProductFormNotifier({
     required Product product,
 ```
+
+## 7. Mostrar mensaje de actualización
+- Se va a usar snackbar.
+- Se recuerda que no se debe usar context en espacios asíncronos, ya que pudo haber cambiado durante ese tiempo de espera.
+  - Sin embargo, se puede usar cuando se usa then en el future.
+- Se crea un método para el snackbar en product_screen.dart
+
+``` dart
+  void showSnackbar( BuildContext context ) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Producto Actualizado'))
+    );
+  }
+```
+
+- Se utiliza por medio de then del future.
+
+``` dart
+       onPressed: () {
+          if (productState.product == null) return;
+          ref.read(productFormProvider(productState.product!).notifier).onFormSubmit().then((value) {
+            if (!value) return;
+            showSnackbar(context);
+          });
+        },
+```
+
+## 8. Crear un nuevo producto
+- Al navegar a ProductScreen en lugar de mandar el id se manda la palabra new.
+1. product_provider.dart, función loadProduct se agrga lógica de si se recibe la palabra new.
+2. Se define el método newEmptyProduct()
+
+``` dart
+  Product newEmptyProduct() {
+    return Product(
+      id: 'new',
+      title: '',
+      price: 0,
+      description: '',
+      slug: '',
+      stock: 0,
+      sizes: [],
+      gender: 'men',
+      tags: [],
+      images: [],
+    );
+  }
+
+  Future<void> loadProduct() async {
+    try {
+
+       if(state.id == 'new') {
+        state = state.copyWith(
+          isLoading: false,
+          product: newEmptyProduct(),
+        );
+        return;
+       }
+```
+3. Navegar a pantalla con el botón de Nuevo Product en products_screen.dart
+
+``` dart
+        onPressed: () {
+          context.push('/product/new');
+        },
+```
+4. Evaluar en product_form_provider.dart si el id es new entonces enviar null.
+
+``` dart
+  Future<bool> onFormSubmit() async {
+    _touchedEverything();
+    if (!state.isFormValid) return false;
+
+    if (onSubmitCallback == null) return false;
+
+    final productLike = {
+      'id': (state.id == 'new') ? null : state.id,
+```
+
+## 9. Ocultar teclado cuando ya no se ocupa
+- Se envuelve a product_screen en un GestureDetector para poder usar FocusScope.
+
+``` dart
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+```
+
+- Se debe llamar en otros lugares, como en el size selector o gender selector.
+
+# Sección 30. Cámara, Galería y carga de archivos
+1. Patrón adaptador sobre el paquete de cámara
+2. POST Form Multipart
+3. Mostrar imágenes como archivos
+4. Multiples cargas simultáneas
+5. Postman - Pruebas de API
+6. Actualizar estado del formulario
+7. Otras validaciones
+
+## 2. PubDev - Cámara y Galería 
+1. Descargar paquete https://pub.dev/packages/image_picker.
+  - Este paquete permite trabajar con la cámara y con la galería.
+  - Para Android no se requieren configuraciones adicionales, pero para iOS en la documentación se especifica qué se debe agregar.
+
+```
+<dict>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Se requiere acceso a la galería para seleccionar los productos</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Se requiereuiere acceso a la cámara para poder tomar foto de los productos</string>
+	<key>NSMicrophoneUsageDescription </key>
+	<string>Si desea grabar audio se requiere acceder al micrófono.</string>
+```
+
+## 3. Patrón adaptador - Servicio
+1. Flutter\teslo-shop\teslo-app\lib\features\shared\infrastructure\services\camera_gallery_service.dart
+``` dart
+abstract class CameraGalleryService {
+  Future<String?> takePhoto();
+  Future<String?> selectPhoto();
+}
+
+```
+2. Flutter\teslo-shop\teslo-app\lib\features\shared\infrastructure\services\camera_gallery_service_impl.dart
+
+``` dart
+import 'package:image_picker/image_picker.dart';
+import 'package:teslo_shop/features/shared/infrastructure/services/camera_gallery_service.dart';
+
+class CameraGallerySeviceImpl extends CameraGalleryService {
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  Future<String?> selectPhoto() async {
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (photo == null) return null;
+    print('Imagen ${photo.path}');
+    return photo.path;
+  }
+
+  @override
+  Future<String?> takePhoto() async {
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+      preferredCameraDevice: CameraDevice.rear,
+    );
+
+    if (photo == null) return null;
+    print('Foto ${photo.path}');
+    return photo.path;
+  }
+}
+
+```
+
+## 4. Probar cámara y galería
+- Se llaman en los botones de actions en produc_screen.dart
+
+``` dart
+AppBar(
+    title: const Text('Editar Producto'),
+    actions: [
+      IconButton(
+        icon: const Icon(Icons.photo_library_outlined),
+        onPressed: () async {
+          final photoPath = await CameraGallerySeviceImpl().selectPhoto();
+          if (photoPath == null) return;
+          photoPath;
+        },
+      ),
+      IconButton(
+        icon: const Icon(Icons.camera_alt_outlined),
+        onPressed: () async {
+          final photoPath = await CameraGallerySeviceImpl().takePhoto();
+          if (photoPath == null) return;
+          photoPath;
+        },
+      ),
+    ],
+  ),
+```
+
+## 5. Mostrar imágenes desde Paths absolutos
+1. Añadir nuevo método en product_form_provider.dart para actualizar imágenes del estado.
+
+``` dart
+  void updateProductImage(String path) {
+    state = state.copyWith(
+      images: [...state.images, path]
+    );
+  }
+
+```
+
+2. Llamar método en product_screen al momento que se tiene el photoPath en los actions.
+
+``` dart
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.photo_library_outlined),
+              onPressed: () async {
+                final photoPath = await CameraGallerySeviceImpl().selectPhoto();
+                if (photoPath == null) return;
+                ref.read(productFormProvider(productState.product!).notifier).updateProductImage(photoPath);
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.camera_alt_outlined),
+              onPressed: () async {
+                final photoPath = await CameraGallerySeviceImpl().takePhoto();
+                if (photoPath == null) return;
+                ref.read(productFormProvider(productState.product!).notifier).updateProductImage(photoPath);
+              },
+            ),
+          ],
+```
+
+3. Refactorizar _ImageGallery en product_screen.dart, ya que ahora se van a tener imágenes que no son de Network debido al uso de la cámara, la cual guarda el file en el cache.
+  - Se va a cambiar el imageProvide para que sea Network o AssetImage dependiendo de si la imagen empieza o no con http.
+
+``` dart
+      children: images.map((e) {
+        late ImageProvider imageProvider;
+        if (e.startsWith('http')) {
+          imageProvider = NetworkImage(e);
+        } else {
+          imageProvider = FileImage(File(e));
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(20)),
+              child: FadeInImage(
+                fit: BoxFit.cover,
+                image: imageProvider,
+                placeholder: const AssetImage('assets/loaders/bottle-loader.gif'),
+              )),
+        );
+```

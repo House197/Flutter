@@ -23,7 +23,7 @@ class ProductsDatasourceImpl extends ProductsDatasource {
       final String? productId = productLike['id'];
       final bool productHasId = productId != null;
       final String method = productHasId ? 'PATCH' : 'POST';
-      final String url = productHasId ? '/products/$productId' : '/post';
+      final String url = productHasId ? '/products/$productId' : '/products';
       productLike.remove('id');
 
       final response = await dio.request(
