@@ -1780,3 +1780,42 @@ AppBar(
               )),
         );
 ```
+
+## 6. POST -subir la imagen al backend
+- Se debe dar un formato a las imágenes, ya que cuentas con varios slash.
+  - Se igual manera, se debe procesar la imagen local tomada por la cámara para poder subirla al backend, en donde el backend almacena las imágenes con el campo de image.
+- Los ajustes deben hacerse en products_datasource.impl.dart
+
+``` dart
+ Future<String> _uploadFile(String path) async {
+    try {
+      final fileName = path.split('/').last;
+      final FormData data = FormData.fromMap({'file': MultipartFile.fromFileSync(path, filename: fileName)});
+      final response = await dio.post('/files/product', data: data);
+      return response.data['image'];
+    } catch (e) {
+      throw Exception();
+    }
+  }
+
+  Future<List<String>> _uploadPhotos(List<String> photos) async {
+    final photosToUpload = photos.where((element) => element.contains('/')).toList();
+    final photosToIgnore = photos.where((element) => !element.contains('/')).toList();
+
+    final List<Future<String>> uploadJob = photosToUpload.map((e) => _uploadFile(e)).toList();
+    final newImages = await Future.wait(uploadJob);
+
+    return [...photosToIgnore, ...newImages];
+  }
+
+  @override
+  Future<Product> createUpdateProduct(Map<String, dynamic> productLike) async {
+    try {
+      final String? productId = productLike['id'];
+      final bool productHasId = productId != null;
+      final String method = productHasId ? 'PATCH' : 'POST';
+      final String url = productHasId ? '/products/$productId' : '/products';
+      productLike.remove('id');
+      productLike['images'] = await _uploadPhotos(productLike['images']);
+
+```
